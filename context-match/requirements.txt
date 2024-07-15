@@ -4,3 +4,4 @@ requests
 pandas
 jupyter
 notion_df
+rapidfuzz
