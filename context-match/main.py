@@ -30,7 +30,7 @@ if __name__ == "__main__":
     prompt = "Get me a table of people's job profiles and their blogposts"
 
     # Enrichment of the prompt
-    prompt = expand_prompt(prompt)
+    prompt = expand_prompt_with_synonyms(prompt)
     print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
