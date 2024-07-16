@@ -2,6 +2,7 @@ import json
 from utils.filter_names import *
 from utils.fetch_table_notion import *
 from utils.make_embeddings import *
+from utils.compute_similarity import *
 from notion_client import Client
 from argparse import ArgumentParser
 
@@ -26,6 +27,8 @@ if __name__ == "__main__":
 
     # Prompt user inputs:
     prompt = "Get me a table of people, where they work and their blogs"
+    prompt_embedding = compute_embedding(prompt)
+    print(prompt_embedding.size())
 
     # Converting the databases to pandas dataframes
     df_dict = {}
@@ -39,13 +42,21 @@ if __name__ == "__main__":
             df = get_table_notion(NOTION_TOKEN, temp)
 
             context = [page_names[idx]] + list(df.columns)
-            prompt_embedding, field_embeddings = compute_embeddings(context, prompt)
+            # Join the context to form a single string
+            context = ", ".join(context)
+            
+            field_embeddings = compute_embedding(context)
+            # similarity_score = compute_similarity(prompt_embedding, field_embeddings)
 
-            df_dict[page_names[idx]] = df
+            print(field_embeddings.size())
+
+            # df_dict[page_names[idx]] = (similarity_score, df)
 
             
 
     print(f"Number of databases found: {len(df_dict)}")
+
+    # Get top 5 tables
 
 
 
