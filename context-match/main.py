@@ -3,6 +3,7 @@ from notion_client import Client
 from argparse import ArgumentParser
 from utils.filter_names import *
 from utils.make_embeddings import *
+from utils.prompt_expansion import *
 from utils.fetch_table_notion import *
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -25,8 +26,12 @@ if __name__ == "__main__":
     page_names, page_links = get_page_links(notion, database_id)
     page_table_links = get_table_links_from_pages(notion, page_links)
 
-    # Prompt user inputs:
+    # Prompt from the user
     prompt = "Get me a table of people's job profiles and their blogposts"
+
+    # Enrichment of the prompt
+    prompt = expand_prompt(prompt)
+    print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
     # Converting the databases to pandas dataframes
