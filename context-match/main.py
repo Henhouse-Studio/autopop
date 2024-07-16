@@ -16,25 +16,24 @@ if __name__ == "__main__":
 
     notion = Client(auth=NOTION_TOKEN)
 
-    # Replace with your Notion database ID
+    # The Notion database ID
     database_id = "6ead038babe946b99854dba84ecf05a9"
 
-    # Fetch the page links from the database
-    page_names, page_links = get_page_links(notion, database_id)
-
-    # Fetch the table links from each page
+    # Get the page and table links from the database
+    page_names, page_links, page_tags = get_page_links(notion, database_id)
     page_table_links = get_table_links_from_pages(notion, page_links)
 
-    # Print the links
+    # Converting the databases to pandas dataframes
     df_dict = {}
     for idx, tables in enumerate(page_table_links.values()):
 
+        print(f"Found table '{page_names[idx]}'")
         for table in tables:
 
             id = table.split("#")
             temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
             df = get_table_notion(NOTION_TOKEN, temp)
 
-            df_dict[page_names[idx]] = df
+            df_dict[page_names[idx]] = (page_tags[idx], df)
 
-    print(df_dict)
+    print(f"Number of databases found: {len(df_dict)}")

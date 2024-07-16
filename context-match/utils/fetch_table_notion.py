@@ -18,16 +18,24 @@ def get_page_links(notion, database_id):
 
     names = []
     links = []
+    tags = []
     for page in pages:
 
+        # Extract the page information
+        # print(page)
         page_title = page["properties"]["Name"]["title"][0]["text"]["content"]
-        page_id = page["id"]
-        # Extract the page URL
-        page_url = f"https://www.notion.so/{page_id.replace('-', '')}"
+        page_url = f"https://www.notion.so/{page["id"].replace('-', '')}"
+        page_tags = page["properties"]["Tags"]["multi_select"]
+        tag_list = []
+        for tag in page_tags:
+
+            tag_list.append(tag["name"])
+
         names.append(page_title)
         links.append(page_url)
+        tags.append(tag_list)
 
-    return names, links
+    return names, links, tags
 
 
 def get_table_links_from_pages(notion, page_links):
