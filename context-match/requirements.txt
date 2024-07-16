@@ -5,3 +5,7 @@ pandas
 jupyter
 notion_df
 rapidfuzz
+sklearn
+transformers
+numpy
+nltk
