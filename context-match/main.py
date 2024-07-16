@@ -27,11 +27,11 @@ if __name__ == "__main__":
     page_table_links = get_table_links_from_pages(notion, page_links)
 
     # Prompt from the user
-    prompt = "Get me a table of people's job profiles and their blogposts"
+    prompt = "Get me a table of firms and their employees"
 
     # Enrichment of the prompt
     prompt = expand_prompt_with_synonyms(prompt)
-    print(prompt)
+    # print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
     # Converting the databases to pandas dataframes
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 [prompt_embedding], [field_embeddings]
             )[0][0]
             similarity_score = round(similarity_score * 100, 2)
-            # print(similarity_score)
+            print(similarity_score)
             # Adding to the data dictionary
             df_dict[page_names[idx]] = (similarity_score, df)
 
