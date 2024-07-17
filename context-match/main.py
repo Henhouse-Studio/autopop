@@ -1,4 +1,6 @@
 import json
+import numpy as np
+from scipy.special import softmax
 from notion_client import Client
 from argparse import ArgumentParser
 from utils.filter_names import *
@@ -108,6 +110,36 @@ if __name__ == "__main__":
 
     # Compute similarity scores between each embedding of df_first_last_col_embeddings and df_second_highest_col_embeddings
     similarity_scores = compute_similarity_matrix(df_first_last_col_embeddings, df_second_highest_col_embeddings)
+
+
+    # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
+    similarity_scores = dict(sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1])))
+
+    # Convert the dictionary to a structured array for vectorized operations
+    keys, scores = zip(*similarity_scores.items())
+    keys = np.array(keys)
+    scores = np.array(scores)
+
+    # Compute softmax for each unique key[0]
+    unique_keys_a = np.unique(keys[:, 0])
+    softmax_scores = np.zeros_like(scores)
+
+    # Compute softmax scores in a vectorized manner
+    for key_a in unique_keys_a:
+        mask = keys[:, 0] == key_a
+        softmax_scores[mask] = softmax(scores[mask])
+
+    # Reconstruct the dictionary with rounded softmax scores
+    softmax_scores_dict = {tuple(keys[i]): round(softmax_scores[i], 4) for i in range(len(keys))}
+
+    # Threshold based on table size
+    threshold = 2 * 0.8 / len(df_second[highest_similar_col_name])
+
+    # Filter similarity scores based on threshold
+    filtered_similarity_scores = {k: v for k, v in softmax_scores_dict.items() if v >= threshold}
+
+    print(filtered_similarity_scores)
+    print(len(filtered_similarity_scores))
 
     
 
