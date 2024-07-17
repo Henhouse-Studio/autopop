@@ -1,4 +1,7 @@
 import notion_df
+import numpy as np
+from utils.make_embeddings import *
+from utils.compute_similarity import *
 
 
 def get_table_notion(NOTION_TOKEN, DATABASE_URL):
@@ -54,3 +57,43 @@ def get_table_links_from_pages(notion, page_links):
         page_table_links[page_link] = table_links
 
     return page_table_links
+
+
+def to_pandas(
+    page_links: dict, page_names: list, prompt_embedding: np.array, notion_token: str
+):
+
+    print("Retrieving databases...")
+    df_dict = {}
+    for idx, tables in enumerate(page_links.values()):
+
+        print(f"Found table '{page_names[idx]}'")
+        for table in tables:
+
+            id = table.split("#")
+            temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
+            df = get_table_notion(notion_token, temp)
+
+            # Converting the table title and column names into context
+            colnames = list(df.columns)
+            sample = df.sample(n=1, random_state=42)
+            desc = f"The name of the table is {page_names[idx]}. It has these columns and entry samples:\n"
+
+            for colname in colnames:
+
+                desc += f"{colname}: {sample[colname].values[0]}\n"
+
+            # print(desc)
+            # Computing the embeddings and similarity scores
+            field_embeddings = compute_embedding(desc)
+            similarity_score = compute_similarity(prompt_embedding, field_embeddings)
+            similarity_score = round(similarity_score * 100, 2)
+            # print(similarity_score)
+            # Adding to the data dictionary
+            df_dict[page_names[idx]] = (similarity_score, df)
+
+    # Sort the dictionary based on similarity score
+    df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
+    print(f"Number of databases found: {len(df_dict)}\n")
+
+    return df_dict

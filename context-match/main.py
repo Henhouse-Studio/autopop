@@ -1,20 +1,57 @@
 import json
-import numpy as np
-from scipy.special import softmax
+import argparse
 from notion_client import Client
-from argparse import ArgumentParser
 from utils.filter_names import *
 from utils.make_embeddings import *
 from utils.prompt_expansion import *
 from utils.fetch_table_notion import *
 from utils.compute_similarity import *
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Argparser arguments:
+
+# Argparser:
+def config():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--threshold", default=0.8, type=float, help="Threshold for detecting matches"
+    )
+
+    return parser.parse_args()
+
+
+# Entry matching
+def entry_matcher(
+    df_base: pd.DataFrame, df_populate: pd.DataFrame, filtered_similarity_scores: dict
+):
+    print("Matching the entries...")
+    merged_data = []
+
+    # Iterate over the pointers to merge the rows
+    pointers = list(filtered_similarity_scores.keys())
+    for i, j in pointers:
+
+        # Get the row from df_base
+        df_base_row = df_base.iloc[i].copy()
+        # Get the row from df_populate and rename its columns
+        df_populate_row = df_populate.iloc[j].copy()
+        df_populate_row.index = [f"{col}_df2" for col in df_populate_row.index]
+
+        # Concatenate the rows along the columns
+        merged_row = pd.concat([df_base_row, df_populate_row])
+        merged_data.append(merged_row)
+
+    # Convert the list of merged rows to a DataFrame
+    result_df = pd.DataFrame(merged_data)
+    print("Matching done!\n")
+
+    return result_df
 
 
 # Execution
 if __name__ == "__main__":
+
+    # Get the argparser arguments
+    args = config()
 
     # Initialize the Notion client
     with open("notion.json") as f:
@@ -39,108 +76,25 @@ if __name__ == "__main__":
     prompt_embedding = compute_embedding(prompt)
 
     # Converting the databases to pandas dataframes
-    df_dict = {}
-    for idx, tables in enumerate(page_table_links.values()):
+    df_dict = to_pandas(page_table_links, page_names, prompt_embedding, NOTION_TOKEN)
 
-        print(f"Found table '{page_names[idx]}'")
-        for table in tables:
-
-            id = table.split("#")
-            temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
-            df = get_table_notion(NOTION_TOKEN, temp)
-
-            # Converting the table title and column names into context
-            colnames = list(df.columns)
-            sample = df.sample(n=1, random_state=42)
-            desc = f"The name of the table is {page_names[idx]}. It has these columns and entry samples:\n"
-
-            for colname in colnames:
-
-                desc += f"{colname}: {sample[colname].values[0]}\n"
-
-            # print(desc)
-            # Computing the embeddings and similarity scores
-            field_embeddings = compute_embedding(desc)
-            similarity_score = compute_similarity(prompt_embedding, field_embeddings)
-            similarity_score = round(similarity_score * 100, 2)
-            # print(similarity_score)
-            # Adding to the data dictionary
-            df_dict[page_names[idx]] = (similarity_score, df)
-            
-    # Sort the dictionary based on similarity score
-    df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
-
-    print(f"Number of databases found: {len(df_dict)}")
-
-    # get the first item of the df_dict
+    # Similarity scores between all rows in both databases
     df_ranked = list(df_dict.items())
     df_first = df_ranked[0][1][1]
     df_second = df_ranked[1][1][1]
-
-     # Get the last column of df_first and join its items into a string
-    last_col_name_df1 = df_first.columns[-1]
-    str_last_col_df1 = ', '.join(df_first[last_col_name_df1].astype(str).tolist())
-
-    # Compute embedding for the concatenated string of the last column of df_first
-    str_last_col_df1_embedding = compute_embedding(str_last_col_df1)
-
-    # Compute embeddings for each column in df_second in parallel
-    df_second_embeddings = {}
-    with ThreadPoolExecutor() as executor:
-        future_to_col = {executor.submit(compute_embedding, ', '.join(df_second[col].astype(str).tolist())): col for col in df_second.columns}
-        for future in as_completed(future_to_col):
-            col = future_to_col[future]
-            df_second_embeddings[col] = future.result()
-
-    # Compute similarity scores between str_last_col_df1_embedding and df_second_embeddings
-    similarity_scores = {col: util.pytorch_cos_sim(str_last_col_df1_embedding, emb).squeeze().cpu().tolist() for col, emb in df_second_embeddings.items()}
-
-    # Sort the similarity scores and get the highest similarity score column name
-    highest_similar_col_name = max(similarity_scores, key=similarity_scores.get)
-    
-    def get_embeddings(df, column):
-        items = df[column].astype(str).tolist()
-        with ThreadPoolExecutor() as executor:
-            embeddings = list(executor.map(compute_embedding, items))
-        return embeddings
-
-    # Compute embeddings for each row in the relevant columns of df_first and df_second
-    df_first_last_col_embeddings = get_embeddings(df_first, last_col_name_df1)
-    df_second_highest_col_embeddings = get_embeddings(df_second, highest_similar_col_name)
-
-    # Compute similarity scores between each embedding of df_first_last_col_embeddings and df_second_highest_col_embeddings
-    similarity_scores = compute_similarity_matrix(df_first_last_col_embeddings, df_second_highest_col_embeddings)
-
-
-    # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
-    similarity_scores = dict(sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1])))
-
-    # Convert the dictionary to a structured array for vectorized operations
-    keys, scores = zip(*similarity_scores.items())
-    keys = np.array(keys)
-    scores = np.array(scores)
-
-    # Compute softmax for each unique key[0]
-    unique_keys_a = np.unique(keys[:, 0])
-    softmax_scores = np.zeros_like(scores)
-
-    # Compute softmax scores in a vectorized manner
-    for key_a in unique_keys_a:
-        mask = keys[:, 0] == key_a
-        softmax_scores[mask] = softmax(scores[mask])
-
-    # Reconstruct the dictionary with rounded softmax scores
-    softmax_scores_dict = {tuple(keys[i]): round(softmax_scores[i], 4) for i in range(len(keys))}
+    score_dict = compute_similarity_softmax(df_first, df_second)
 
     # Threshold based on table size
-    threshold = 2 * 0.8 / len(df_second[highest_similar_col_name])
+    threshold = 2 * args.threshold / len(df_second)
 
     # Filter similarity scores based on threshold
-    filtered_similarity_scores = {k: v for k, v in softmax_scores_dict.items() if v >= threshold}
+    filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
 
-    print(filtered_similarity_scores)
-    print(len(filtered_similarity_scores))
+    print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
-    
+    final_df = entry_matcher(df_first, df_second, filtered_similarity_scores)
+    final_df.to_csv("out.csv", index=False)
 
+    print("Dataset exported!")
 
+    # print(final_df)

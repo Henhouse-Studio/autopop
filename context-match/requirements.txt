@@ -10,3 +10,4 @@ transformers
 numpy
 nltk
 sentence-transformers
+tqdm
