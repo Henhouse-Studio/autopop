@@ -5,7 +5,8 @@ from utils.filter_names import *
 from utils.make_embeddings import *
 from utils.prompt_expansion import *
 from utils.fetch_table_notion import *
-from sentence_transformers import util
+from utils.compute_similarity import *
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Argparser arguments:
 
@@ -58,7 +59,7 @@ if __name__ == "__main__":
             # print(desc)
             # Computing the embeddings and similarity scores
             field_embeddings = compute_embedding(desc)
-            similarity_score = util.pytorch_cos_sim(prompt_embedding, field_embeddings).squeeze().cpu().tolist()
+            similarity_score = compute_similarity(prompt_embedding, field_embeddings)
             similarity_score = round(similarity_score * 100, 2)
             # print(similarity_score)
             # Adding to the data dictionary
@@ -74,30 +75,39 @@ if __name__ == "__main__":
     df_first = df_ranked[0][1][1]
     df_second = df_ranked[1][1][1]
 
-    # get the last column of the df_raw
-    field_last_col_df1 = df_first.columns[-1]
-    
-    # join the the column items from df_first into a string
-    str_last_col_df1 = ', '.join(df_first[field_last_col_df1].astype(str).tolist())
+     # Get the last column of df_first and join its items into a string
+    last_col_name_df1 = df_first.columns[-1]
+    str_last_col_df1 = ', '.join(df_first[last_col_name_df1].astype(str).tolist())
 
-    # mk embeddings of str_last_col_df1
+    # Compute embedding for the concatenated string of the last column of df_first
     str_last_col_df1_embedding = compute_embedding(str_last_col_df1)
 
-    # mk embeddings per column of df_second
+    # Compute embeddings for each column in df_second in parallel
     df_second_embeddings = {}
-    for col in df_second.columns:
-        df_second_embeddings[col] = compute_embedding(', '.join(df_second[col].astype(str).tolist()))
+    with ThreadPoolExecutor() as executor:
+        future_to_col = {executor.submit(compute_embedding, ', '.join(df_second[col].astype(str).tolist())): col for col in df_second.columns}
+        for future in as_completed(future_to_col):
+            col = future_to_col[future]
+            df_second_embeddings[col] = future.result()
 
-    # compute similarity scores between str_last_col_df1_embedding and df_second_embeddings
-    similarity_scores = {}
-    for col, emb in df_second_embeddings.items():
-        similarity_scores[col] = util.pytorch_cos_sim(str_last_col_df1_embedding, emb).squeeze().cpu().tolist()
+    # Compute similarity scores between str_last_col_df1_embedding and df_second_embeddings
+    similarity_scores = {col: util.pytorch_cos_sim(str_last_col_df1_embedding, emb).squeeze().cpu().tolist() for col, emb in df_second_embeddings.items()}
 
-    # sort the similarity scores
-    similarity_scores = dict(sorted(similarity_scores.items(), key=lambda x: x[1], reverse=True))
+    # Sort the similarity scores and get the highest similarity score column name
+    highest_similar_col_name = max(similarity_scores, key=similarity_scores.get)
+    
+    def get_embeddings(df, column):
+        items = df[column].astype(str).tolist()
+        with ThreadPoolExecutor() as executor:
+            embeddings = list(executor.map(compute_embedding, items))
+        return embeddings
 
-    # get the highest similarity score name
-    highest_similar_col_name = list(similarity_scores.items())[0][0]
+    # Compute embeddings for each row in the relevant columns of df_first and df_second
+    df_first_last_col_embeddings = get_embeddings(df_first, last_col_name_df1)
+    df_second_highest_col_embeddings = get_embeddings(df_second, highest_similar_col_name)
+
+    # Compute similarity scores between each embedding of df_first_last_col_embeddings and df_second_highest_col_embeddings
+    similarity_scores = compute_similarity_matrix(df_first_last_col_embeddings, df_second_highest_col_embeddings)
 
     
 
