@@ -63,7 +63,42 @@ if __name__ == "__main__":
             # print(similarity_score)
             # Adding to the data dictionary
             df_dict[page_names[idx]] = (similarity_score, df)
+            
+    # Sort the dictionary based on similarity score
+    df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
 
     print(f"Number of databases found: {len(df_dict)}")
 
-    # Get top 5 tables
+    # get the first item of the df_dict
+    df_ranked = list(df_dict.items())
+    df_first = df_ranked[0][1][1]
+    df_second = df_ranked[1][1][1]
+
+    # get the last column of the df_raw
+    field_last_col_df1 = df_first.columns[-1]
+    
+    # join the the column items from df_first into a string
+    str_last_col_df1 = ', '.join(df_first[field_last_col_df1].astype(str).tolist())
+
+    # mk embeddings of str_last_col_df1
+    str_last_col_df1_embedding = compute_embedding(str_last_col_df1)
+
+    # mk embeddings per column of df_second
+    df_second_embeddings = {}
+    for col in df_second.columns:
+        df_second_embeddings[col] = compute_embedding(', '.join(df_second[col].astype(str).tolist()))
+
+    # compute similarity scores between str_last_col_df1_embedding and df_second_embeddings
+    similarity_scores = {}
+    for col, emb in df_second_embeddings.items():
+        similarity_scores[col] = util.pytorch_cos_sim(str_last_col_df1_embedding, emb).squeeze().cpu().tolist()
+
+    # sort the similarity scores
+    similarity_scores = dict(sorted(similarity_scores.items(), key=lambda x: x[1], reverse=True))
+
+    # get the highest similarity score name
+    highest_similar_col_name = list(similarity_scores.items())[0][0]
+
+    
+
+
