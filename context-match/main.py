@@ -5,7 +5,7 @@ from utils.filter_names import *
 from utils.make_embeddings import *
 from utils.prompt_expansion import *
 from utils.fetch_table_notion import *
-from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import util
 
 # Argparser arguments:
 
@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     # Prompt from the user
     prompt = "Get me a table of firms and their employees"
+    # prompt = "Get me a table of people's job profiles"
 
     # Enrichment of the prompt
     prompt = expand_prompt_with_synonyms(prompt)
@@ -47,7 +48,7 @@ if __name__ == "__main__":
 
             # Converting the table title and column names into context
             colnames = list(df.columns)
-            sample = df.sample(n=1)
+            sample = df.sample(n=1, random_state=42)
             desc = f"The name of the table is {page_names[idx]}. It has these columns and entry samples:\n"
 
             for colname in colnames:
@@ -57,11 +58,9 @@ if __name__ == "__main__":
             # print(desc)
             # Computing the embeddings and similarity scores
             field_embeddings = compute_embedding(desc)
-            similarity_score = cosine_similarity(
-                [prompt_embedding], [field_embeddings]
-            )[0][0]
+            similarity_score = util.pytorch_cos_sim(prompt_embedding, field_embeddings).squeeze().cpu().tolist()
             similarity_score = round(similarity_score * 100, 2)
-            print(similarity_score)
+            # print(similarity_score)
             # Adding to the data dictionary
             df_dict[page_names[idx]] = (similarity_score, df)
 

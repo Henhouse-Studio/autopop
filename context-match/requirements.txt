@@ -9,3 +9,4 @@ sklearn
 transformers
 numpy
 nltk
+sentence-transformers
