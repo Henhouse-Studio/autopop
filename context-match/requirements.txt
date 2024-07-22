@@ -11,3 +11,4 @@ numpy
 nltk
 sentence-transformers
 tqdm
+openai

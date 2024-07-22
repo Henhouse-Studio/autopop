@@ -95,7 +95,7 @@ if __name__ == "__main__":
     print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
     final_df = entry_matcher(df_first, df_second, filtered_similarity_scores)
-    final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+    # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
 
     # Remove columns which are the same
     final_df = remove_duplicates(final_df)

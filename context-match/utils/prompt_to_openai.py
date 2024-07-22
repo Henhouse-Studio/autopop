@@ -1,45 +1,52 @@
-import openai
+import json
 import pandas as pd
+from re import sub
+from openai import OpenAI
+
+# Load the API key from the JSON file
+with open("token_openai.json", "r") as f:
+    api_key = json.load(f)["KEY"]
+
+client = OpenAI(api_key=api_key)
 
 # Load your CSV file
-df = pd.read_csv('locations.csv')
+df = pd.read_csv("out.csv")
 
-# Set your OpenAI API key
-openai.api_key = 'your-api-key'
 
-# Function to generate a prompt and get facts from OpenAI API
-def get_facts(row):
-    # Base prompt
-    prompt = f"Provide detailed facts about {row['Location']}."
+# Function to generate a prompt and get facts from the OpenAI API
+def get_facts(df: pd.DataFrame, n_facts: int = 3):
+    # Get the base column names
+    colnames = list(df.columns)
 
-    # Add additional information based on available columns
-    if 'Country' in row:
-        prompt += f" It is located in {row['Country']}."
-    if 'Population' in row:
-        prompt += f" It has a population of {row['Population']}."
-    if 'Landmarks' in row:
-        landmarks = row['Landmarks']
-        prompt += f" Notable landmarks include {landmarks}."
+    # Check that the number of facts requested is positive
+    assert n_facts > 0, "Please input more than zero facts."
+    assert n_facts < 12, "Please input less than 12 facts to prevent GPT overruse."
 
-    # Fetch facts from OpenAI
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=150
+    # Create the prompt for the OpenAI API
+    fact_get_prompt = f"""This is my data: 
+    
+    {df.head().to_string()}
+    
+    Based on this, come up with {n_facts} column names for additional facts about the data above. 
+    Return it as a Python list and nothing else."""
+
+    # Fetch the response from the OpenAI API using GPT-4 Turbo
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": fact_get_prompt},
+        ],
+        max_tokens=50,
     )
-    return response.choices[0].text.strip()
+    fact_response = response.choices[0].message.content.strip()
+    fact_response = sub("```python", "", fact_response)
+    fact_response = sub("```", "", fact_response)
 
-# Iterate through the DataFrame and get facts for each location
-facts = []
-for _, row in df.iterrows():
-    fact = get_facts(row)
-    facts.append(fact)
+    return fact_response
 
-# Add the facts to the DataFrame
-df['Facts'] = facts
 
-# Save the new DataFrame to a CSV file
-df.to_csv('locations_with_facts.csv', index=False)
+# Get the facts for the data in the DataFrame
+response = get_facts(df)
 
-# Display the DataFrame to the user
-import ace_tools as tools; tools.display_dataframe_to_user(name="Location Facts", dataframe=df)
+print(response)

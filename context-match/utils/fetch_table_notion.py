@@ -102,18 +102,29 @@ def to_pandas(
 
 def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
 
-    colnames_df = list(df.columns)[:-1]
+    colnames_df = list(df.columns)
     colnames_pop = [colname for colname in colnames_df if "_df2" in colname]
-    colnames_pop_clean = [colname.split("_df2")[0] for colname in colnames_pop]
     colnames_base = list(set(colnames_df) - set(colnames_pop))
-    overlap = list(set(colnames_base) & set(colnames_pop_clean))
 
-    for colname in overlap:
+    for colname_b in colnames_base:
 
-        matches = df[colname] == df[f"{colname}_df2"]
-        similarity_ratio = matches.sum() / len(matches)
+        colnames_pop_copy = colnames_pop.copy()
+        for colname_p in colnames_pop_copy:
+            # Calculate similarity between columns
+            matches = df[colname_b] == df[colname_p]
+            similarity_ratio = matches.sum() / len(matches)
 
-        if similarity_ratio >= threshold:
-            df.drop(f"{colname}_df2", axis="columns", inplace=True)
+            if similarity_ratio >= threshold:
+                df.drop(colname_p, axis="columns", inplace=True)
+                # Update colnames_pop after dropping the column
+                colnames_pop.remove(colname_p)
+
+    # Rename columns to remove '_df2'
+    df.rename(
+        columns=lambda x: (
+            x.replace("_df2", "") if x.replace("_df2", "") not in colnames_base else x
+        ),
+        inplace=True,
+    )
 
     return df
