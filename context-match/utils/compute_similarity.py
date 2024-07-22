@@ -114,4 +114,4 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
 
     print("Process finished!\n")
 
-    return softmax_scores_dict
+    return softmax_scores_dict, highest_similar_col_name

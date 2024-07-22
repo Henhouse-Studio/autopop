@@ -1,5 +1,6 @@
 import notion_df
 import numpy as np
+import pandas as pd
 from utils.make_embeddings import *
 from utils.compute_similarity import *
 
@@ -97,3 +98,22 @@ def to_pandas(
     print(f"Number of databases found: {len(df_dict)}\n")
 
     return df_dict
+
+
+def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
+
+    colnames_df = list(df.columns)[:-1]
+    colnames_pop = [colname for colname in colnames_df if "_df2" in colname]
+    colnames_pop_clean = [colname.split("_df2")[0] for colname in colnames_pop]
+    colnames_base = list(set(colnames_df) - set(colnames_pop))
+    overlap = list(set(colnames_base) & set(colnames_pop_clean))
+
+    for colname in overlap:
+
+        matches = df[colname] == df[f"{colname}_df2"]
+        similarity_ratio = matches.sum() / len(matches)
+
+        if similarity_ratio >= threshold:
+            df.drop(f"{colname}_df2", axis="columns", inplace=True)
+
+    return df

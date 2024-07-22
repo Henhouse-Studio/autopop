@@ -82,7 +82,9 @@ if __name__ == "__main__":
     df_ranked = list(df_dict.items())
     df_first = df_ranked[0][1][1]
     df_second = df_ranked[1][1][1]
-    score_dict = compute_similarity_softmax(df_first, df_second)
+    score_dict, highest_similar_col_name = compute_similarity_softmax(
+        df_first, df_second
+    )
 
     # Threshold based on table size
     threshold = 2 * args.threshold / len(df_second)
@@ -93,8 +95,12 @@ if __name__ == "__main__":
     print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
     final_df = entry_matcher(df_first, df_second, filtered_similarity_scores)
+    final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+
+    # Remove columns which are the same
+    final_df = remove_duplicates(final_df)
+
     final_df.to_csv("out.csv", index=False)
+    # print(final_df)
 
     print("Dataset exported!")
-
-    # print(final_df)
