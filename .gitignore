@@ -1,3 +1,5 @@
 context-match/keys.json
 context-match/~
 **/__pycache__
+.DS_Store
+context-match/llama3/
