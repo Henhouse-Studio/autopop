@@ -1,0 +1,21 @@
+# environment.yml
+
+name: my_env
+dependencies:
+  - numpy
+  - pandas
+  - pip
+  - pip:
+      - some-common-python-package
+
+  # OS-specific dependencies
+  - selectors:
+      - selector: osx
+        dependencies:
+          - pyobjc
+      - selector: linux
+        dependencies:
+          - some-linux-package
+      - selector: win
+        dependencies:
+          - pywin32
