@@ -4,14 +4,13 @@ from re import sub
 from openai import OpenAI
 
 # Load the API key from the JSON file
-with open("token_openai.json", "r") as f:
-    api_key = json.load(f)["KEY"]
+with open("keys.json", "r") as f:
+    api_key = json.load(f)["openAI_token"]
 
 client = OpenAI(api_key=api_key)
 
 # Load your CSV file
 df = pd.read_csv("out.csv")
-
 
 # Function to generate a prompt and get facts from the OpenAI API
 def get_facts(df: pd.DataFrame, n_facts: int = 3):
