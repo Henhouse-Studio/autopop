@@ -7,7 +7,10 @@ from utils.compute_similarity import *
 
 def get_table_notion(NOTION_TOKEN, DATABASE_URL):
 
-    return notion_df.download(DATABASE_URL, api_key=NOTION_TOKEN)
+    df = notion_df.download(DATABASE_URL, api_key=NOTION_TOKEN)
+    df = df.iloc[:, ::-1]
+
+    return df
 
 
 def get_page_links(notion, database_id):

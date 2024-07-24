@@ -40,8 +40,8 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     )
 
     # Get the last column of df_base and join its items into a string
-    last_col_name_df1 = df_base.columns[-1]
-    str_last_col_df1 = ", ".join(df_base[last_col_name_df1].astype(str).tolist())
+    col_name_df1 = df_base.columns[0]
+    str_last_col_df1 = ", ".join(df_base[col_name_df1].astype(str).tolist())
 
     # Compute embedding for the concatenated string of the last column of df_base
     str_last_col_df1_embedding = compute_embedding(str_last_col_df1)
@@ -77,7 +77,7 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     highest_similar_col_name = max(similarity_scores, key=similarity_scores.get)
 
     # Compute embeddings for each row in the relevant columns of df_base and df_populate
-    df_first_last_col_embeddings = get_embeddings(df_base, last_col_name_df1)
+    df_first_last_col_embeddings = get_embeddings(df_base, col_name_df1)
     df_second_highest_col_embeddings = get_embeddings(
         df_populate, highest_similar_col_name
     )

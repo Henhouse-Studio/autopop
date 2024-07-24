@@ -32,6 +32,7 @@ if __name__ == "__main__":
         dic_keys = json.load(f)
         NOTION_TOKEN = dic_keys["notion_token"]
         DATABASE_ID = dic_keys["database_id"]
+        OPENAI_TOKEN = dic_keys["openAI_token"]
 
     # Initialize the Notion client
     notion = Client(auth=NOTION_TOKEN)
@@ -73,6 +74,9 @@ if __name__ == "__main__":
 
     # Remove columns which are the same
     final_df = remove_duplicates(final_df)
+
+    # Rename columns in case there are similar names
+    final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
 
     final_df.to_csv("out.csv", index=False)
     # print(final_df)
