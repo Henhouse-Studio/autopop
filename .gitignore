@@ -1,5 +1,18 @@
 context-match/keys.json
 context-match/~
+context-match/notion_vira.json
+context-match/token_openai.json
+context-match/out.csv
+context-match/locations_with_facts.csv
+
+# Ignore several things in image-match
+image-match/images
 **/__pycache__
 .DS_Store
 context-match/llama3/
+
+context-match/out.csv
+context-match/locations_with_facts.csv
+
+# Ignore several things in image-match
+image-match/images
