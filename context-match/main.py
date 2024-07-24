@@ -9,6 +9,7 @@ from utils.compute_similarity import *
 from utils.entry_matcher import *
 from utils.prompt_to_openai import *
 
+
 # Argparser:
 def config():
 
@@ -27,10 +28,10 @@ if __name__ == "__main__":
     args = config()
 
     # get keys from json key holder
-    with open("test.json") as f:
+    with open("keys.json") as f:
         dic_keys = json.load(f)
-        NOTION_TOKEN = dic_keys["notion_token"] 
-        DATABASE_ID = dic_keys["database_id"] 
+        NOTION_TOKEN = dic_keys["notion_token"]
+        DATABASE_ID = dic_keys["database_id"]
 
     # Initialize the Notion client
     notion = Client(auth=NOTION_TOKEN)
@@ -55,7 +56,9 @@ if __name__ == "__main__":
     df_ranked = list(df_dict.items())
     df_first = df_ranked[0][1][1]
     df_second = df_ranked[1][1][1]
-    score_dict, highest_similar_col_name = compute_similarity_softmax(df_first, df_second)
+    score_dict, highest_similar_col_name = compute_similarity_softmax(
+        df_first, df_second
+    )
 
     # Threshold based on table size
     threshold = 2 * args.threshold / len(df_second)

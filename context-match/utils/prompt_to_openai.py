@@ -1,21 +1,13 @@
-import json
 import pandas as pd
 from re import sub
 from openai import OpenAI
 
-# Load the API key from the JSON file
-with open("keys.json", "r") as f:
-    api_key = json.load(f)["openAI_token"]
-
-client = OpenAI(api_key=api_key)
-
-# Load your CSV file
-df = pd.read_csv("out.csv")
 
 # Function to generate a prompt and get facts from the OpenAI API
-def get_facts(df: pd.DataFrame, n_facts: int = 3):
-    # Get the base column names
-    colnames = list(df.columns)
+def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3):
+
+    # Get the OpenAI Client
+    client = OpenAI(api_key=api_key)
 
     # Check that the number of facts requested is positive
     assert n_facts > 0, "Please input more than zero facts."
@@ -43,9 +35,3 @@ def get_facts(df: pd.DataFrame, n_facts: int = 3):
     fact_response = sub("```", "", fact_response)
 
     return fact_response
-
-
-# Get the facts for the data in the DataFrame
-response = get_facts(df)
-
-print(response)
