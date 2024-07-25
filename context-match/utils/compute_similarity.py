@@ -34,7 +34,7 @@ def get_embeddings(df, column):
         for result in tqdm(
             executor.map(compute_embedding, items),
             total=len(items),
-            desc=f"Computing embeddings for {column}",
+            desc=f"Computing embeddings for column '{column}'",
         ):
             embeddings.append(result)
 
