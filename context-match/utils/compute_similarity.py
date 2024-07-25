@@ -49,10 +49,10 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
 
     # Get the last column of df_base and join its items into a string
     col_name_df1 = df_base.columns[0]
-    str_last_col_df1 = ", ".join(df_base[col_name_df1].astype(str).tolist())
+    str_first_col_df1 = ", ".join(df_base[col_name_df1].astype(str).tolist())
 
     # Compute embedding for the concatenated string of the last column of df_base
-    str_last_col_df1_embedding = compute_embedding(str_last_col_df1)
+    str_first_col_df1_embedding = compute_embedding(str_first_col_df1)
 
     # Compute embeddings for each column in df_populate in parallel
     df_second_embeddings = {}
@@ -72,9 +72,9 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
             col = future_to_col[future]
             df_second_embeddings[col] = future.result()
 
-    # Compute similarity scores between str_last_col_df1_embedding and df_second_embeddings
+    # Compute similarity scores between str_first_col_df1_embedding and df_second_embeddings
     similarity_scores = {
-        col: util.pytorch_cos_sim(str_last_col_df1_embedding, emb)
+        col: util.pytorch_cos_sim(str_first_col_df1_embedding, emb)
         .squeeze()
         .cpu()
         .tolist()
