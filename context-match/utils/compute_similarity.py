@@ -16,7 +16,9 @@ def compute_similarity_matrix(embeddings1, embeddings2):
 
     similarity_scores = {}
     for idx1, emb1 in enumerate(embeddings1):
+
         for idx2, emb2 in enumerate(embeddings2):
+
             similarity_scores[(idx1, idx2)] = (
                 util.pytorch_cos_sim(emb1, emb2).squeeze().cpu().tolist()
             )
@@ -27,8 +29,14 @@ def compute_similarity_matrix(embeddings1, embeddings2):
 def get_embeddings(df, column):
 
     items = df[column].astype(str).tolist()
+    embeddings = []
     with ThreadPoolExecutor() as executor:
-        embeddings = list(executor.map(compute_embedding, items))
+        for result in tqdm(
+            executor.map(compute_embedding, items),
+            total=len(items),
+            desc=f"Computing embeddings for {column}",
+        ):
+            embeddings.append(result)
 
     return embeddings
 

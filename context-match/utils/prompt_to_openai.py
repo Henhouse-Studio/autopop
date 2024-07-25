@@ -66,6 +66,7 @@ def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 50):
     
     Based on this dataframe, rename the columns if necessary based on the content of the rows. 
     Do not include underscores in the names, and ensure that there are no duplicates.
+    Also, ensure that the number of column names is the same as in the original database.
     Provide this in a python list (use double quotation marks for each entry) and nothing else."""
 
     # Fetch the response from the OpenAI API using GPT-4o

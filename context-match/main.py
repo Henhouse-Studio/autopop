@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     # Enrichment of the prompt
     prompt = expand_prompt_with_synonyms(prompt)
-    print(prompt)
+    # print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
     # Converting the databases to pandas dataframes
