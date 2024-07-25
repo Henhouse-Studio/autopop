@@ -42,6 +42,21 @@ def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int 
 
     return fact_response
 
+def augment_column_names(prompt:str, col_names:list, api_key: str, max_tokens: int = 800):
+    
+    prompt_augumented = prompt + f"""\n\nBased on the columns: {col_names}, 
+                                come up with additional column names that could be useful for the data above. 
+                                Return it as a Python list and nothing else.
+                                Based on these column names which ones can be used to create static facts. 
+                                Based on these selected column static names provide me with extra subcategories for each column.
+                                And based on this take into account that is for the Netherlands"""
+    
+    response = prompt_openai(prompt_augumented, api_key, max_tokens)
+    response = sub("```python", "", response)
+    response = sub("```", "", response)
+
+    return response
+
 
 def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 50):
 
@@ -72,5 +87,13 @@ if __name__ == "__main__":
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
     df = pd.read_csv("out.csv")
-    df_new = rename_columns(df, OPENAI_TOKEN, max_tokens=70)
-    df_new.to_csv("test.csv", index=False)
+    # df_new = rename_columns(df, OPENAI_TOKEN, max_tokens=70)
+    # df_new.to_csv("test.csv", index=False)
+
+    prompt = "Get me a table of firms and their employees"
+
+    base_columns = df.columns
+    new_columns = augment_column_names(prompt, base_columns, OPENAI_TOKEN)
+    print(prompt)
+    print(new_columns)
+
