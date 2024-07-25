@@ -67,7 +67,7 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
         for future in tqdm(
             as_completed(future_to_col),
             total=len(future_to_col),
-            desc="Computing column embeddings",
+            desc="Computing column embeddings from second database",
         ):
             col = future_to_col[future]
             df_second_embeddings[col] = future.result()
@@ -85,14 +85,14 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     highest_similar_col_name = max(similarity_scores, key=similarity_scores.get)
 
     # Compute embeddings for each row in the relevant columns of df_base and df_populate
-    df_first_last_col_embeddings = get_embeddings(df_base, col_name_df1)
+    df_base_first_col_embeddings = get_embeddings(df_base, col_name_df1)
     df_second_highest_col_embeddings = get_embeddings(
         df_populate, highest_similar_col_name
     )
 
-    # Compute similarity scores between each embedding of df_first_last_col_embeddings and df_second_highest_col_embeddings
+    # Compute similarity scores between each embedding of df_base_first_col_embeddings and df_second_highest_col_embeddings
     similarity_scores = compute_similarity_matrix(
-        df_first_last_col_embeddings, df_second_highest_col_embeddings
+        df_base_first_col_embeddings, df_second_highest_col_embeddings
     )
 
     # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
