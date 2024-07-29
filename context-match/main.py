@@ -50,35 +50,38 @@ if __name__ == "__main__":
     # print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
+    dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
+    print(dfs_dic)
+
     # Converting the databases to pandas dataframes
-    df_dict = to_pandas(page_table_links, page_names, prompt_embedding, NOTION_TOKEN)
+    # dfs_dict_ranked = score_dataframes(page_table_links, page_names, prompt_embedding, NOTION_TOKEN)
 
-    # Similarity scores between all rows in both databases
-    df_ranked = list(df_dict.items())
-    df_first = df_ranked[0][1][1]
-    df_second = df_ranked[1][1][1]
-    score_dict, highest_similar_col_name = compute_similarity_softmax(
-        df_first, df_second
-    )
+    # # Similarity scores between all rows in both databases
+    # df_ranked = list(dfs_dict_ranked.items())
+    # df_first = df_ranked[0][1][1]
+    # df_second = df_ranked[1][1][1]
+    # score_dict, highest_similar_col_name = compute_similarity_softmax(
+    #     df_first, df_second
+    # )
 
-    # Threshold based on table size
-    threshold = 2 * args.threshold / len(df_second)
+    # # Threshold based on table size
+    # threshold = 2 * args.threshold / len(df_second)
 
-    # Filter similarity scores based on threshold
-    filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
+    # # Filter similarity scores based on threshold
+    # filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
 
-    print(f"Found {len(filtered_similarity_scores)} matches!\n")
+    # print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
-    final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
-    # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+    # final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
+    # # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
 
-    # Remove columns which are the same
-    final_df = remove_duplicates(final_df)
+    # # Remove columns which are the same
+    # final_df = remove_duplicates(final_df)
 
-    # Rename columns in case there are similar names
-    final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
+    # # Rename columns in case there are similar names
+    # final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
 
-    final_df.to_csv("out.csv", index=False)
-    # print(final_df)
+    # final_df.to_csv("out.csv", index=False)
+    # # print(final_df)
 
-    print("Dataset exported!")
+    # print("Dataset exported!")

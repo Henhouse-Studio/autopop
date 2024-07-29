@@ -63,7 +63,29 @@ def get_table_links_from_pages(notion, page_links):
     return page_table_links
 
 
-def to_pandas(
+def get_dataframes(
+    page_links: dict, page_names: list, notion_token: str
+):
+
+    print("Retrieving databases...")
+    df_dict = {}
+    for idx, tables in enumerate(page_links.values()):
+
+        print(f"Found table '{page_names[idx]}'")
+        for table in tables:
+
+            id = table.split("#")
+            temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
+            df = get_table_notion(notion_token, temp)
+            # Adding to the data dictionary
+            df_dict[page_names[idx]] = df
+
+    # Sort the dictionary based on similarity score
+    print(f"Number of databases found: {len(df_dict)}\n")
+
+    return df_dict
+
+def score_dataframes(
     page_links: dict, page_names: list, prompt_embedding: np.array, notion_token: str
 ):
 

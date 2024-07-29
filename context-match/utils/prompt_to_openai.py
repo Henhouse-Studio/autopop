@@ -78,6 +78,9 @@ def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 50):
 
     return df
 
+def get_names_columns(prompt:str, col_names:list, api_key: str, max_tokens: int = 800):
+
+    return 
 
 if __name__ == "__main__":
 
