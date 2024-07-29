@@ -1,3 +1,4 @@
+import os
 import notion_df
 import numpy as np
 import pandas as pd
@@ -13,14 +14,14 @@ def get_table_notion(NOTION_TOKEN, DATABASE_URL):
     return df
 
 
-def get_page_links(notion, database_id):
+def get_page_links(notion_client, database_id):
     """
     Get links to pages in a Notion database.
 
     :param database_id: The ID of the Notion database.
     :return: A list of links to the pages.
     """
-    response = notion.databases.query(database_id=database_id)
+    response = notion_client.databases.query(database_id=database_id)
     pages = response.get("results")
 
     names = []
@@ -29,10 +30,16 @@ def get_page_links(notion, database_id):
 
         # Extract the page information
         # print(page)
+        flag_tag = False
         page_title = page["properties"]["Name"]["title"][0]["text"]["content"]
+        page_tags = page["properties"]["Tags"]["multi_select"]
+        for tag in page_tags:
+            if tag["name"] == "Fact":
+                flag_tag = True
+                break
         page_id = page["id"]
         page_url = f"https://www.notion.so/{page_id.replace('-', '')}"
-        names.append(page_title)
+        names.append((flag_tag, page_title))
         links.append(page_url)
 
     return names, links
@@ -71,18 +78,43 @@ def get_dataframes(
     df_dict = {}
     for idx, tables in enumerate(page_links.values()):
 
-        print(f"Found table '{page_names[idx]}'")
+        is_fact = page_names[idx][0]
+        table_name = page_names[idx][1]
+        path_table = f"databases/{table_name}.npy"
+
+        if is_fact:
+            print(f"Found Fact table '{table_name}'")
+        else:
+            print(f"Found table '{table_name}'")
+
         for table in tables:
 
             id = table.split("#")
             temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
-            df = get_table_notion(notion_token, temp)
+
+            # when is a 'FACT' table try to load it, else download it
+            if is_fact:
+
+                # loading the table if it exists
+                if os.path.isfile(path_table):
+                    df = pd.DataFrame(np.load(path_table, allow_pickle=True))
+                    print(type(df))
+                    print(df.head())
+
+                # downloading the table if it does not exist
+                else:
+                    df = get_table_notion(notion_token, temp)
+                    print('Saving Fact table...')
+                    np.save(path_table, df)
+            
+            # when is not a 'FACT' table then just download it
+            else:
+                df = get_table_notion(notion_token, temp)
+
             # Adding to the data dictionary
             df_dict[page_names[idx]] = df
 
-    # Sort the dictionary based on similarity score
     print(f"Number of databases found: {len(df_dict)}\n")
-
     return df_dict
 
 def score_dataframes(

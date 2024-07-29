@@ -35,23 +35,23 @@ if __name__ == "__main__":
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
     # Initialize the Notion client
-    notion = Client(auth=NOTION_TOKEN)
+    notion_client = Client(auth=NOTION_TOKEN)
 
     # Get the page and table links from the database
-    page_names, page_links = get_page_links(notion, DATABASE_ID)
-    page_table_links = get_table_links_from_pages(notion, page_links)
+    page_names, page_links = get_page_links(notion_client, DATABASE_ID)
+    page_table_links = get_table_links_from_pages(notion_client, page_links)
 
-    # Prompt from the user
-    prompt = "Get me a table of firms and their employees"
-    # prompt = "Get me a table of people's job profiles"
+    # # Prompt from the user
+    # prompt = "Get me a table of firms and their employees"
+    # # prompt = "Get me a table of people's job profiles"
 
-    # Enrichment of the prompt
-    prompt = expand_prompt_with_synonyms(prompt)
-    # print(prompt)
-    prompt_embedding = compute_embedding(prompt)
+    # # Enrichment of the prompt
+    # prompt = expand_prompt_with_synonyms(prompt)
+    # # print(prompt)
+    # prompt_embedding = compute_embedding(prompt)
 
     dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
-    print(dfs_dic)
+    # print(dfs_dic)
 
     # Converting the databases to pandas dataframes
     # dfs_dict_ranked = score_dataframes(page_table_links, page_names, prompt_embedding, NOTION_TOKEN)

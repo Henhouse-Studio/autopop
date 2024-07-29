@@ -17,4 +17,5 @@ image-match/images
 context-match/edgedriver_mac64_m1/
 context-match/html_files_studylink/
 *.csv
+*.npy
 context-match/test.ipynb
