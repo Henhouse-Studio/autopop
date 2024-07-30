@@ -80,7 +80,7 @@ def get_dataframes(
 
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
-        path_table = f"databases/{table_name}.npy"
+        path_table = f"databases/{table_name}.csv"
 
         if is_fact:
             print(f"Found Fact table '{table_name}'")
@@ -97,65 +97,77 @@ def get_dataframes(
 
                 # loading the table if it exists
                 if os.path.isfile(path_table):
-                    df = pd.DataFrame(np.load(path_table, allow_pickle=True))
-                    print(type(df))
-                    print(df.head())
+                    df = pd.read_csv(path_table)
 
                 # downloading the table if it does not exist
                 else:
+                    print('Saving Fact table. This may take a while as it is a large database...')
                     df = get_table_notion(notion_token, temp)
-                    print('Saving Fact table...')
-                    np.save(path_table, df)
+                    df.to_csv(path_table, index=False)
             
             # when is not a 'FACT' table then just download it
             else:
                 df = get_table_notion(notion_token, temp)
 
             # Adding to the data dictionary
-            df_dict[page_names[idx]] = df
+            df_dict[table_name] = df
 
     print(f"Number of databases found: {len(df_dict)}\n")
     return df_dict
 
+
 def score_dataframes(
-    page_links: dict, page_names: list, prompt_embedding: np.array, notion_token: str
-):
+    dfs_dic: pd.DataFrame, prompt_embedding: np.array
+):  
+    print("Scoring databases based on prompt...")
 
-    print("Retrieving databases...")
     df_dict = {}
-    for idx, tables in enumerate(page_links.values()):
+    for table_name, df in dfs_dic.items():
 
-        print(f"Found table '{page_names[idx]}'")
-        for table in tables:
+        # Converting the table title and column names into context
+        col_names = list(df.columns)
+        sample = df.sample(n=1, random_state=42)
+        desc = f"The name of the table is {table_name}. It has these columns and entry samples:\n"
 
-            id = table.split("#")
-            temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
-            df = get_table_notion(notion_token, temp)
+        for col_name in col_names:
+            desc += f"{col_name}: {sample[col_name].values[0]}\n"
 
-            # Converting the table title and column names into context
-            colnames = list(df.columns)
-            sample = df.sample(n=1, random_state=42)
-            desc = f"The name of the table is {page_names[idx]}. It has these columns and entry samples:\n"
-
-            for colname in colnames:
-
-                desc += f"{colname}: {sample[colname].values[0]}\n"
-
-            # print(desc)
-            # Computing the embeddings and similarity scores
-            field_embeddings = compute_embedding(desc)
-            similarity_score = compute_similarity(prompt_embedding, field_embeddings)
-            similarity_score = round(similarity_score * 100, 2)
-            # print(similarity_score)
-            # Adding to the data dictionary
-            df_dict[page_names[idx]] = (similarity_score, df)
+        # print(desc)
+        # Computing the embeddings and similarity scores
+        field_embeddings = compute_embedding(desc)
+        similarity_score = compute_similarity(prompt_embedding, field_embeddings)
+        similarity_score = round(similarity_score * 100, 2)
+        # print(similarity_score, table_name)
+        # Adding to the data dictionary
+        df_dict[table_name] = (similarity_score, df)
 
     # Sort the dictionary based on similarity score
     df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
-    print(f"Number of databases found: {len(df_dict)}\n")
 
-    return df_dict
+    # printing similarity score, name
+    for key, value in df_dict.items():
+        print(value[0], key)
 
+    return df_dict, get_top_k(df_dict)
+
+def get_top_k(dfs_dict_ranked):
+    '''
+    Get the top-k similar dataframes based on the similarity scores
+    '''
+
+    # compute the std-dev from the similarity scores
+    data = [df[0] for df in dfs_dict_ranked.values()]
+    std_dev = np.std(data)
+
+    current_group = [data[0]]
+    top_k = 1
+    for i in range(1, len(data)):
+        if abs(data[i] - np.mean(current_group)) <= std_dev:
+            current_group.append(data[i])
+            top_k += 1
+        else:
+            break
+    return top_k
 
 def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
 
