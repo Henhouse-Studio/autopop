@@ -12,4 +12,5 @@ def compute_embedding(text: str, load_embeddings: bool = False):
     processed_text = preprocess_text(text)
     text_embeddings = model.encode(processed_text, convert_to_tensor=True)
 
+    # return text_embeddings.cpu().detach().numpy()
     return text_embeddings

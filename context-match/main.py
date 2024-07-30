@@ -15,7 +15,7 @@ def config():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--threshold", default=0.8, type=float, help="Threshold for detecting matches"
+        "--threshold", default=0.7, type=float, help="Threshold for detecting matches"
     )
 
     return parser.parse_args()
@@ -41,47 +41,58 @@ if __name__ == "__main__":
     page_names, page_links = get_page_links(notion_client, DATABASE_ID)
     page_table_links = get_table_links_from_pages(notion_client, page_links)
 
-    # # Prompt from the user
-    # prompt = "Get me a table of firms and their employees"
-    # # prompt = "Get me a table of people's job profiles"
+    # Prompt from the user
+    prompt = "Get me a table of firms and their employees"
+    # prompt = "Get me a table of people's job profiles"
 
-    # # Enrichment of the prompt
-    # prompt = expand_prompt_with_synonyms(prompt)
-    # # print(prompt)
-    # prompt_embedding = compute_embedding(prompt)
+    # Enrichment of the prompt
+    prompt = expand_prompt_with_synonyms(prompt)
+    # print(prompt)
+    prompt_embedding = compute_embedding(prompt)
 
     dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
-    # print(dfs_dic)
 
     # Converting the databases to pandas dataframes
-    # dfs_dict_ranked = score_dataframes(page_table_links, page_names, prompt_embedding, NOTION_TOKEN)
+    dfs_dict_ranked, len_grouped_data  = score_dataframes(dfs_dic, prompt_embedding)
 
-    # # Similarity scores between all rows in both databases
-    # df_ranked = list(dfs_dict_ranked.items())
-    # df_first = df_ranked[0][1][1]
-    # df_second = df_ranked[1][1][1]
-    # score_dict, highest_similar_col_name = compute_similarity_softmax(
-    #     df_first, df_second
-    # )
+    # Get the top-k similar dataframes
+    df_ranked = list(dfs_dict_ranked.items())[:len_grouped_data]
 
-    # # Threshold based on table size
-    # threshold = 2 * args.threshold / len(df_second)
+    # printing similarity score, name of df_ranked
+    print('\nTop-k similar dataframes:')
+    for i in range(len_grouped_data):
+        print(f"{df_ranked[i][1][0]} {df_ranked[i][0]}")
 
-    # # Filter similarity scores based on threshold
-    # filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
+    # Selecting the first two dataframes for comparison
+    if len(df_ranked) < 2:
+        # print("Not enough dataframes to compare!")
+        df_second = pd.DataFrame()
+    else: 
+        df_first = df_ranked[0][1][1]
+        df_second = df_ranked[1][1][1]
+    
+    score_dict, highest_similar_col_name = compute_similarity_softmax(
+        df_first, df_second
+    )
 
-    # print(f"Found {len(filtered_similarity_scores)} matches!\n")
+    # Threshold based on table size
+    threshold = 2 * args.threshold / len(df_second)
 
-    # final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
-    # # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+    # Filter similarity scores based on threshold
+    filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
 
-    # # Remove columns which are the same
-    # final_df = remove_duplicates(final_df)
+    print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
-    # # Rename columns in case there are similar names
-    # final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
+    final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
+    # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
 
-    # final_df.to_csv("out.csv", index=False)
-    # # print(final_df)
+    # Remove columns which are the same
+    final_df = remove_duplicates(final_df)
 
-    # print("Dataset exported!")
+    # Rename columns in case there are similar names
+    final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
+
+    final_df.to_csv("out.csv", index=False)
+    # print(final_df)
+
+    print("Dataset exported!")

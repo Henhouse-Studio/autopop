@@ -19,3 +19,4 @@ context-match/html_files_studylink/
 *.csv
 *.npy
 context-match/test.ipynb
+context-match/bin

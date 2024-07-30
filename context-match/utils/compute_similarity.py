@@ -1,16 +1,17 @@
+import sys
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.special import softmax
 from utils.make_embeddings import *
 from sentence_transformers import util
+from scipy.spatial.distance import cdist
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def compute_similarity(embedding1, embedding2):
 
     return util.pytorch_cos_sim(embedding1, embedding2).squeeze().cpu().tolist()
-
 
 def compute_similarity_matrix(embeddings1, embeddings2):
 
@@ -25,23 +26,93 @@ def compute_similarity_matrix(embeddings1, embeddings2):
 
     return similarity_scores
 
+def compute_row_embeddings(df: pd.DataFrame, column_name: str):
 
-def get_embeddings(df, column):
-
-    items = df[column].astype(str).tolist()
+    items = df[column_name].astype(str).tolist()
     embeddings = []
     with ThreadPoolExecutor() as executor:
         for result in tqdm(
             executor.map(compute_embedding, items),
             total=len(items),
-            desc=f"Computing embeddings for column '{column}'",
+            desc=f"Computing row embeddings for '{column_name}'",
         ):
             embeddings.append(result)
 
     return embeddings
 
 
+def compute_column_embeddings(df: pd.DataFrame, desc: str):
+    future_to_col = {}
+    embeddings_dict = {}
+
+    with ThreadPoolExecutor() as executor:
+        for col in df.columns:
+            future = executor.submit(compute_embedding, ", ".join(df[col].astype(str).tolist()))
+            future_to_col[future] = col
+
+        for future in tqdm(as_completed(future_to_col), total=len(future_to_col),
+                           desc=f"Computing column embeddings from {desc} database"):
+            col = future_to_col[future]
+            embedding = future.result().cpu().detach().numpy()
+            embeddings_dict[col] = embedding
+
+    sorted_columns = sorted(embeddings_dict.keys())
+    df_embeddings = [embeddings_dict[col] for col in sorted_columns]
+
+    return df_embeddings, sorted_columns
+
+
 def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame):
+
+    print("Computing similarity scores between the top 2 dataframes. This may take a while...")
+    df_first_embeddings, df_first_columns = compute_column_embeddings(df_base, "first database")
+    df_second_embeddings, df_second_columns = compute_column_embeddings(df_populate, "second database")
+
+    distances = 1 - cdist(np.vstack(df_first_embeddings), np.vstack(df_second_embeddings), metric='cosine')
+
+    # Find the index of the maximum similarity (minimum distance)
+    max_idx = np.unravel_index(np.argmax(distances), distances.shape)
+    highest_similar_col_name = (df_first_columns[max_idx[0]], df_second_columns[max_idx[1]])
+
+    # Compute embeddings for each row in the relevant columns of df_base and df_populate
+    df_base_first_col_embeddings = compute_row_embeddings(df_base,highest_similar_col_name[0])
+    df_second_highest_col_embeddings =  compute_row_embeddings(df_populate,highest_similar_col_name[1])
+
+    # Compute similarity scores between each embedding of df_base_first_col_embeddings and df_second_highest_col_embeddings
+    similarity_scores = compute_similarity_matrix(
+        df_base_first_col_embeddings, df_second_highest_col_embeddings
+    )
+
+    # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
+    similarity_scores = dict(
+        sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1]))
+    )
+
+    # Convert the dictionary to a structured array for vectorized operations
+    keys, scores = zip(*similarity_scores.items())
+    keys = np.array(keys)
+    scores = np.array(scores)
+
+    # Compute softmax for each unique key[0]
+    unique_keys_a = np.unique(keys[:, 0])
+    softmax_scores = np.zeros_like(scores)
+
+    # Compute softmax scores in a vectorized manner
+    for key_a in unique_keys_a:
+
+        mask = keys[:, 0] == key_a
+        softmax_scores[mask] = softmax(scores[mask])
+
+    # Reconstruct the dictionary with rounded softmax scores
+    softmax_scores_dict = {
+        tuple(keys[i]): round(softmax_scores[i], 4) for i in range(len(keys))
+    }
+    print("Process finished!\n")
+
+    return softmax_scores_dict, highest_similar_col_name
+
+
+def compute_similarity_softmax_old(df_base: pd.DataFrame, df_populate: pd.DataFrame):
 
     print(
         "Computing similarity scores between the top 2 dataframes. This may take a while..."
@@ -85,8 +156,8 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     highest_similar_col_name = max(similarity_scores, key=similarity_scores.get)
 
     # Compute embeddings for each row in the relevant columns of df_base and df_populate
-    df_base_first_col_embeddings = get_embeddings(df_base, col_name_df1)
-    df_second_highest_col_embeddings = get_embeddings(
+    df_base_first_col_embeddings = compute_row_embeddings(df_base, col_name_df1)
+    df_second_highest_col_embeddings = compute_row_embeddings(
         df_populate, highest_similar_col_name
     )
 
@@ -123,3 +194,4 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     print("Process finished!\n")
 
     return softmax_scores_dict, highest_similar_col_name
+
