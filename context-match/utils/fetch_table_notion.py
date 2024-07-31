@@ -138,7 +138,6 @@ def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
     print("Scoring databases based on prompt...")
 
     df_dict = {}
-    desc_dict = {}
     for table_name, df in dfs_dic.items():
 
         col_names = list(df.columns)
@@ -162,8 +161,8 @@ def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
     print("Found Top-K:", len_grouped_data)
 
     # printing similarity score, name of df_ranked
-    for key, value in df_dict.items():
-        print(value[0], key)
+    for i, (key, value) in enumerate(df_dict.items()):
+        print(f"[{i}]:", value[0], key)
 
     return df_dict, get_top_k(df_dict)
 
