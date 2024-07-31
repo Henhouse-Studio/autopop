@@ -42,12 +42,16 @@ if __name__ == "__main__":
     page_table_links = get_table_links_from_pages(notion_client, page_links)
 
     # Prompt from the user
-    prompt = "Get me a table of firms and their employees"
+    # prompt = "Get me a table of firms and their employees"
+    # prompt = "Get me a table of employees and their job profiles"
+    prompt = "Get me a table of employees, their skills and their job profiles"
+    # prompt = "Get me a table of employees"
     # prompt = "Get me a table of people's job profiles"
 
     # Enrichment of the prompt
     prompt = expand_prompt_with_synonyms(prompt)
-    # print(prompt)
+    prompt = get_enriched_prompt(prompt, api_key=OPENAI_TOKEN)
+    print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
     dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
@@ -56,7 +60,11 @@ if __name__ == "__main__":
     dfs_dict_ranked, len_grouped_data  = score_dataframes(dfs_dic, prompt_embedding)
 
     # Get the top-k similar dataframes
-    df_ranked = list(dfs_dict_ranked.items())[:len_grouped_data]
+    df_ranked = dict(list(dfs_dict_ranked.items())[:len_grouped_data])
+
+    # refine top-k similar dataframes using LLM
+    df_ranked = rerank_similar_dataframes(prompt, df_ranked, api_key=OPENAI_TOKEN)
+    sys.exit()
 
     # printing similarity score, name of df_ranked
     print('\nTop-k similar dataframes:')

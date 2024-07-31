@@ -139,6 +139,33 @@ def get_names_columns(
 
     return response
 
+def rerank_similar_dataframes(
+        prompt: str, df_ranked: dict,  api_key: str, max_tokens: int = 400
+):
+    """
+    Rerank the similar dataframes based on the prompt and description of the dataframes.
+
+    :param prompt: The prompt to rerank the dataframes.
+    :param df_ranked: A dictionary of dataframes ranked by similarity score.
+    :return: The reranked dataframes.
+    """
+    desc = ""
+    # Iterate through the dictionary
+    for _, items in df_ranked.items():
+        desc += items[2] + "\n"
+        
+    # print(desc)
+    prompt = f"""Based on this prompt '{prompt}' and these table descriptions: {desc}.\n
+                 Rank the tables according to relevance in descending order.
+                 Get me the table names as a Python list and nothing else."""
+    response = prompt_openai(prompt, api_key, max_tokens)
+    response = sub("```python", "", response)
+    response = sub("```", "", response)
+    
+    print(response)
+
+    return
+
 
 if __name__ == "__main__":
 
