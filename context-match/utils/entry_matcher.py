@@ -1,5 +1,10 @@
+import sys
+import argparse
+import itertools
 import pandas as pd
-
+from utils.compute_similarity import *
+from utils.prompt_to_openai import *
+from utils.fetch_table_notion import *
 
 # Entry matching
 def combine_dfs(
@@ -59,3 +64,40 @@ def combine_dfs(
     print("Matching done!\n")
 
     return result_df
+
+def merge_top_k(df_ranked: dict, args: argparse.Namespace):
+
+    print("\nMerging pairs of tables...")
+    # Generate pairs
+    keys = list(df_ranked.keys())
+    table_pairs = list(itertools.combinations(keys, 2))
+
+    for pair in table_pairs:
+        print(pair)
+        df_first = df_ranked[pair[0]][1]
+        df_second = df_ranked[pair[1]][1]
+        
+        score_dict, highest_similar_col_name = compute_similarity_softmax(df_base=df_first, df_populate=df_second)
+
+    # Threshold based on table size
+    threshold = 2 * args.threshold / len(df_second)
+
+    # Filter similarity scores based on threshold
+    filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
+
+    print(f"Found {len(filtered_similarity_scores)} matches!\n")
+
+    final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
+    # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+
+    # Remove columns which are the same
+    final_df = remove_duplicates(final_df)
+
+    # Rename columns in case there are similar names
+    final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
+
+    final_df.to_csv("out.csv", index=False)
+    # print(final_df)
+
+
+    return final_df
