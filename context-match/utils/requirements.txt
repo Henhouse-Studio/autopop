@@ -12,3 +12,4 @@ nltk
 sentence-transformers
 tqdm
 openai
+pprintpp
