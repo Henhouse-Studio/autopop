@@ -4,6 +4,7 @@ import string
 import platform
 from nltk.corpus import wordnet, stopwords
 from nltk.tokenize import word_tokenize
+from utils.prompt_to_openai import *
 
 
 # Function to get NLTK data directory based on the operating system
@@ -75,3 +76,25 @@ def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
 
     keywords_str = "\nkeywords: " + ", ".join(keywords)
     return prompt + ", " + keywords_str
+
+def get_enriched_prompt(original_prompt: str, api_key: str):
+    """
+    Get the enriched prompt from OpenAI's API.
+
+    :param prompt: The prompt to enrich (str).
+    :param api_key: The OpenAI API key (str).
+    :return: The enriched prompt (str).
+    """
+    prompt = original_prompt + "\n\nBased on the prompt above, what columns should be present in the database? Return it as a Python list and nothing else."
+
+    response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=50)
+    response = sub("```python", "", response)
+    response = sub("```", "", response)
+
+    # make response into a string
+    # response = json.loads(response)
+    # response = ', '.join(response)
+
+    enriched_prompt = original_prompt + ". The table should contain column names similar to: " + response
+
+    return enriched_prompt

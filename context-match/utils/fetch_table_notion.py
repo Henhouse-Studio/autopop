@@ -138,21 +138,30 @@ def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
     print("Scoring databases based on prompt...")
 
     df_dict = {}
+    desc_dict = {}
     for table_name, df in dfs_dic.items():
 
         col_names = list(df.columns)
         sample = df.sample(n=1, random_state=42)
-        desc = f"The name of the table is {table_name}. It has these columns and entry samples:\n"
+        desc = f"The name of the table is {table_name}. It has these columns: {col_names}. This is a extract from the table:\n"
 
-        for col_name in col_names:
-            desc += f"{col_name}: {sample[col_name].values[0]}\n"
-
+        for sample_value in range(len(sample)):
+            for col_name in col_names:
+                desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
+        
+        # print(desc)
         field_embeddings = compute_embedding(desc)
         similarity_score = compute_similarity(prompt_embedding, field_embeddings)
         similarity_score = round(similarity_score * 100, 2)
-        df_dict[table_name] = (similarity_score, df)
-
+        df_dict[table_name] = (similarity_score, df, desc)
+    
+    # sorting the dictionary based on similarity score
     df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
+
+    len_grouped_data = get_top_k(df_dict)
+    print("Found Top-K:", len_grouped_data)
+
+    # printing similarity score, name of df_ranked
     for key, value in df_dict.items():
         print(value[0], key)
 
