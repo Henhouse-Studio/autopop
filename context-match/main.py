@@ -1,7 +1,8 @@
 import json
 import argparse
 from notion_client import Client
-from utils.filter_names import *
+
+# from utils.fuzzy_matcher import *
 from utils.make_embeddings import *
 from utils.prompt_expansion import *
 from utils.fetch_table_notion import *
@@ -57,12 +58,11 @@ if __name__ == "__main__":
     dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
 
     # Converting the databases to pandas dataframes
-    dfs_dict_ranked, len_grouped_data  = score_dataframes(dfs_dic, prompt_embedding)
+    dfs_dict_ranked, len_grouped_data = score_dataframes(dfs_dic, prompt_embedding)
 
     # Get the top-k similar dataframes
     df_ranked = dict(list(dfs_dict_ranked.items())[:len_grouped_data])
-    
-    final_df = merge_top_k(df_ranked, args)
 
+    final_df = merge_top_k(df_ranked, args)
 
     print("Dataset exported!")
