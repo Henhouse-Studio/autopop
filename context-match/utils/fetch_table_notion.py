@@ -120,6 +120,7 @@ def get_dataframes(page_links: dict, page_names: list, notion_token: str):
 
             else:
                 df = get_table_notion(notion_token, temp)
+                df.to_csv(path_table)
 
             df_dict[table_name] = df
 
@@ -147,18 +148,18 @@ def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
         for sample_value in range(len(sample)):
             for col_name in col_names:
                 desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
-        
+
         # print(desc)
         field_embeddings = compute_embedding(desc)
         similarity_score = compute_similarity(prompt_embedding, field_embeddings)
         similarity_score = round(similarity_score * 100, 2)
         df_dict[table_name] = (similarity_score, df, desc)
-    
+
     # sorting the dictionary based on similarity score
     df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
 
     len_grouped_data = get_top_k(df_dict)
-    print("Found Top-K:", len_grouped_data)
+    print(f"Selecting Top-{len_grouped_data} from:")
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_dict.items()):
@@ -201,13 +202,18 @@ def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
     :param threshold: The similarity threshold for considering columns as duplicates.
     :return: A pandas DataFrame with duplicate columns removed.
     """
+
+    # TODO: Use fuzzy matching instead
+
     colnames_df = list(df.columns)
     colnames_pop = [colname for colname in colnames_df if "_df2" in colname]
     colnames_base = list(set(colnames_df) - set(colnames_pop))
 
     for colname_b in colnames_base:
+
         colnames_pop_copy = colnames_pop.copy()
         for colname_p in colnames_pop_copy:
+
             matches = df[colname_b] == df[colname_p]
             similarity_ratio = matches.sum() / len(matches)
 

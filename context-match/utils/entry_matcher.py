@@ -1,10 +1,12 @@
 import sys
+import pprint
 import argparse
 import itertools
 import pandas as pd
 from utils.compute_similarity import *
 from utils.prompt_to_openai import *
 from utils.fetch_table_notion import *
+
 
 # Entry matching
 def combine_dfs(
@@ -33,10 +35,10 @@ def combine_dfs(
     ]
     pointers += remaining_pointers
 
-    # sort the pointers by descending order by the first element of the tuple
+    # Sort the pointers by descending order by the first element of the tuple
     pointers = sorted(pointers, key=lambda x: x[0])
 
-    # create an emtpy dataframe with col size as df_pop_col_size
+    # Create an emtpy dataframe with col size as df_pop_col_size
     df_pop_col_size = len(df_populate.columns)
     empty_row = pd.Series(
         [None] * df_pop_col_size, index=[f"{col}_df2" for col in df_populate.columns]
@@ -65,6 +67,7 @@ def combine_dfs(
 
     return result_df
 
+
 def merge_top_k(df_ranked: dict, args: argparse.Namespace):
 
     print("\nMerging pairs of tables...")
@@ -73,17 +76,32 @@ def merge_top_k(df_ranked: dict, args: argparse.Namespace):
     table_pairs = list(itertools.combinations(keys, 2))
 
     for pair in table_pairs:
+
         print(pair)
         df_first = df_ranked[pair[0]][1]
         df_second = df_ranked[pair[1]][1]
-        
-        score_dict, highest_similar_col_name = compute_similarity_softmax(df_base=df_first, df_populate=df_second)
 
-    # Threshold based on table size
-    threshold = 2 * args.threshold / len(df_second)
+        score_dict, _ = compute_similarity_entries_row(
+            df_base=df_first, df_populate=df_second
+        )
 
-    # Filter similarity scores based on threshold
-    filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
+        # score_dict_col, _ = compute_similarity_entries_col(
+        #     df_base=df_first, df_populate=df_second
+        # )
+
+    # # Threshold based on table size
+    # threshold = 2 * args.threshold / len(df_second)
+
+    # # Filter similarity scores based on threshold
+    # filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
+    # sorted_similarity_scores = dict(sorted(score_dict.items(), ke=lambda x: x[1]))
+
+    # for k, v in sorted(score_dict.items(), key=lambda item: (item[0][0], -item[1])):
+    #     sorted_dict[k] = v
+
+    pprint.pprint(score_dict)
+
+    sys.exit()
 
     print(f"Found {len(filtered_similarity_scores)} matches!\n")
 
@@ -98,6 +116,5 @@ def merge_top_k(df_ranked: dict, args: argparse.Namespace):
 
     final_df.to_csv("out.csv", index=False)
     # print(final_df)
-
 
     return final_df

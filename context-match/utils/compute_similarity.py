@@ -52,43 +52,62 @@ def compute_similarity_matrix(embeddings1: list, embeddings2: list):
     return similarity_scores
 
 
-def compute_row_embeddings(df: pd.DataFrame, column_name: str):
+def compute_embeddings_rows(df: pd.DataFrame, desc: str = "a"):
     """
-    Compute the embeddings for each row based on a specific column.
+    Compute the embeddings based on a specific column.
 
     :param df: The dataframe to compute the embeddings for (pd.DataFrame).
-    :param column_name: The name of the main column to use (str).
-    :return: The embedding list for the dataframe (list).
+    :param desc: The name of the database (str).
+    :return: The embedding list for the dataframe rows (list).
     """
 
-    items = df[column_name].astype(str).tolist()
-    embeddings = []
+    future_to_row = {}
+    embeddings_dict = {}
+
     with ThreadPoolExecutor() as executor:
-        for result in tqdm(
-            executor.map(compute_embedding, items),
-            total=len(items),
-            desc=f"Computing row embeddings for '{column_name}'",
+
+        for idx, row in df.iterrows():
+            future = executor.submit(
+                compute_embedding, ", ".join(row.astype(str).tolist())
+            )
+            future_to_row[future] = idx
+
+        for future in tqdm(
+            as_completed(future_to_row),
+            total=len(future_to_row),
+            desc=f"Computing row embeddings from {desc} database",
         ):
-            embeddings.append(result)
+            idx = future_to_row[future]
+            embedding = future.result()
+            embeddings_dict[idx] = embedding
 
-    return embeddings
+    sorted_rows = sorted(embeddings_dict.keys())
+    df_embeddings = [embeddings_dict[row] for row in sorted_rows]
+
+    return df_embeddings
 
 
-def compute_column_embeddings(df: pd.DataFrame, desc: str):
+def compute_column_embeddings(df: pd.DataFrame, desc: str = "a", colname: str = ""):
     """
     Compute the embeddings for each column in a specific dataframe.
 
     :param df: The dataframe to compute the embeddings for (pd.DataFrame).
     :param desc: The name of the database (str).
+    :param colname: The name of the specific column to calculate the embeddings for if desired (str).
     :return sorted_columns: The keys for sorting the embeddings (list).
-    :return df_embeddings: The embedding list for the dataframe (list).
+    :return df_embeddings: The embedding list for the dataframe based on the columns (list).
     """
 
     future_to_col = {}
     embeddings_dict = {}
 
     with ThreadPoolExecutor() as executor:
-        for col in df.columns:
+
+        columns = (
+            colname if ((colname != "") and (colname in df.columns)) else df.columns
+        )
+
+        for col in columns:
             future = executor.submit(
                 compute_embedding, ", ".join(df[col].astype(str).tolist())
             )
@@ -109,9 +128,9 @@ def compute_column_embeddings(df: pd.DataFrame, desc: str):
     return df_embeddings, sorted_columns
 
 
-def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame):
+def compute_similarity_entries_row(df_base: pd.DataFrame, df_populate: pd.DataFrame):
     """
-    Compute the softmaxed similarity scores between the rows of two dataframes.
+    Compute the similarity scores between the rows of two dataframes.
 
     :param df_base: The dataframe to enrich (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment (pd.DataFrame).
@@ -120,46 +139,13 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     :return highest_similar_col_name: The column name used as the merging basis.
     """
 
-    print(
-        "Computing similarity scores between the top 2 dataframes. This may take a while..."
-    )
-    
-    df_first_embeddings, df_first_columns = compute_column_embeddings(
-        df_base, "First database"
-    )
-    df_second_embeddings, df_second_columns = compute_column_embeddings(
-        df_populate, "Second database"
-    )
-
-    # Get the similarity scores
-    similarities = 1 - cdist(
-        np.vstack(df_first_embeddings), np.vstack(df_second_embeddings), metric="cosine"
-    )
-
-    # save similarities to csv
-    similarities_df = pd.DataFrame(similarities, columns=df_second_columns, index=df_first_columns)
-    similarities_df.to_csv("similarities.csv")
-
-    # Find the index of the maximum similarity (minimum distance)
-    max_idx = np.unravel_index(np.argmax(similarities), similarities.shape)
-    highest_similar_col_name = (
-        df_first_columns[max_idx[0]],
-        df_second_columns[max_idx[1]],
-    )
-
-    print("highest_similar_col_name", highest_similar_col_name)
-
     # Compute embeddings for each row in the relevant columns of df_base and df_populate
-    df_base_first_col_embeddings = compute_row_embeddings(
-        df_base, highest_similar_col_name[0]
-    )
-    df_second_highest_col_embeddings = compute_row_embeddings(
-        df_populate, highest_similar_col_name[1]
-    )
+    df_base_row_embeddings = compute_embeddings_rows(df_base)
+    df_pop_row_embeddings = compute_embeddings_rows(df_populate)
 
-    # Compute similarity scores between each embedding of df_base_first_col_embeddings and df_second_highest_col_embeddings
+    # Compute similarity scores between each embedding of df_base_first_col_embeddings and df_pop_highest_col_embeddings
     similarity_scores = compute_similarity_matrix(
-        df_base_first_col_embeddings, df_second_highest_col_embeddings
+        df_base_row_embeddings, df_pop_row_embeddings
     )
 
     # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
@@ -167,27 +153,88 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
         sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1]))
     )
 
-    pprint.pprint(similarity_scores)
-
-    # Convert the dictionary to a structured array for vectorized operations
-    keys, scores = zip(*similarity_scores.items())
-    keys = np.array(keys)
-    scores = np.array(scores)
-
-    # Compute softmax for each unique key[0]
-    unique_keys_a = np.unique(keys[:, 0])
-    softmax_scores = np.zeros_like(scores)
-
-    # Compute softmax scores in a vectorized manner
-    for key_a in unique_keys_a:
-
-        mask = keys[:, 0] == key_a
-        softmax_scores[mask] = softmax(scores[mask])
-
-    # Reconstruct the dictionary with rounded softmax scores
-    softmax_scores_dict = {
-        (int(keys[i][0]), int(keys[i][1])): float(round(softmax_scores[i], 4)) for i in range(len(keys))
+    converted_scores = {
+        (int(key[0]), int(key[1])): float(value)
+        for key, value in similarity_scores.items()
     }
-    print("Process finished!\n")
 
-    return softmax_scores_dict, highest_similar_col_name
+    pprint.pprint(converted_scores)
+
+    # pprint.pprint(softmax_scores_dict)
+    print("Finished computing row similarities!\n")
+
+    return converted_scores, None
+
+
+def compute_similarity_entries_col(df_base: pd.DataFrame, df_populate: pd.DataFrame):
+    """
+    Compute the similarity scores between the rows of two dataframes.
+
+    :param df_base: The dataframe to enrich (pd.DataFrame).
+    :param df_populate: The dataframe used for enrichment (pd.DataFrame).
+    :return softmax_scores_dict: The dict containing the similarity scores for matching (dict).
+    It has the following format: '(idx_df1, idx_df2): score' between all entries.
+    :return highest_similar_col_name: The column name used as the merging basis.
+    """
+
+    sim_matrix, sorted_col1, sorted_col2 = compute_similar_columns(df_base, df_populate)
+
+    # Find the index of the maximum similarity (minimum distance)
+    max_idx = np.unravel_index(np.argmax(sim_matrix), sim_matrix.shape)
+    most_similar_cols = (
+        sorted_col1[max_idx[0]],
+        sorted_col2[max_idx[1]],
+    )
+
+    print("Columns which are the most similar:", most_similar_cols)
+
+    # Compute embeddings for each row in the relevant columns of df_base and df_populate
+    df_base_first_col_embeddings, _ = compute_column_embeddings(
+        df_base, sorted_col1[max_idx[0]]
+    )
+    df_pop_highest_col_embeddings, _ = compute_column_embeddings(
+        df_populate, sorted_col2[max_idx[1]]
+    )
+
+    # Compute similarity scores between each embedding of df_base_first_col_embeddings and df_pop_highest_col_embeddings
+    similarity_scores = compute_similarity_matrix(
+        df_base_first_col_embeddings, df_pop_highest_col_embeddings
+    )
+
+    # Sort the similarity scores per each entry in descending order and then by the first element of the key in increasing order
+    similarity_scores = dict(
+        sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1]))
+    )
+
+    converted_scores = {
+        (int(key[0]), int(key[1])): float(value)
+        for key, value in similarity_scores.items()
+    }
+
+    pprint.pprint(converted_scores)
+
+    # pprint.pprint(softmax_scores_dict)
+    print("Finished computing row similarities!\n")
+
+    return converted_scores, most_similar_cols
+
+
+def compute_similar_columns(df1: pd.DataFrame, df2: pd.DataFrame):
+
+    print(
+        "Computing similarity scores between dataframes 'A' and 'B'. This may take a while..."
+    )
+
+    df_first_embeddings, df_first_columns = compute_column_embeddings(
+        df1, "the first database"
+    )
+    df_second_embeddings, df_second_columns = compute_column_embeddings(
+        df2, "the second database"
+    )
+
+    # Get the similarity scores
+    similarities = 1 - cdist(
+        np.vstack(df_first_embeddings), np.vstack(df_second_embeddings), metric="cosine"
+    )
+
+    return similarities, df_first_columns, df_second_columns
