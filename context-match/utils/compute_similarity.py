@@ -167,6 +167,8 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
         sorted(similarity_scores.items(), key=lambda x: (x[0][0], -x[1]))
     )
 
+    pprint.pprint(similarity_scores)
+
     # Convert the dictionary to a structured array for vectorized operations
     keys, scores = zip(*similarity_scores.items())
     keys = np.array(keys)
@@ -186,7 +188,6 @@ def compute_similarity_softmax(df_base: pd.DataFrame, df_populate: pd.DataFrame)
     softmax_scores_dict = {
         (int(keys[i][0]), int(keys[i][1])): float(round(softmax_scores[i], 4)) for i in range(len(keys))
     }
-    pprint.pprint(softmax_scores_dict)
     print("Process finished!\n")
 
     return softmax_scores_dict, highest_similar_col_name
