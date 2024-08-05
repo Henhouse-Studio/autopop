@@ -3,12 +3,13 @@ import pprint
 import argparse
 import itertools
 import pandas as pd
-from utils.compute_similarity import *
 from utils.prompt_to_openai import *
+from utils.compute_similarity import *
 from utils.fetch_table_notion import *
 
 
 # Entry matching
+# TODO: Update to use LinkTransformer instead
 def combine_dfs(
     df_base: pd.DataFrame, df_populate: pd.DataFrame, filtered_similarity_scores: dict
 ):
