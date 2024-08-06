@@ -3,117 +3,89 @@ import pprint
 import argparse
 import itertools
 import pandas as pd
+import linktransformer as lt
+from typing import Tuple
 from utils.prompt_to_openai import *
 from utils.compute_similarity import *
 from utils.fetch_table_notion import *
 
 
 # Entry matching
-# TODO: Update to use LinkTransformer instead
 def combine_dfs(
-    df_base: pd.DataFrame, df_populate: pd.DataFrame, filtered_similarity_scores: dict
+    df_base: pd.DataFrame,
+    df_populate: pd.DataFrame,
+    suffixes: Tuple[str, str] = ("_x", "_y"),
+    model_encoder: str = "all-MiniLM-L6-v2",
 ):
     """
     Combining the rows of two dictionaries based on the similarity scores.
 
     :param df_base: The dataframe to enrich (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment (pd.DataFrame).
-    :param filtered_similarity_scores: The similarity scores to match with (dict). Should be
-    in the form of '(idx_df1, idx_df2): score' per entry.
+    :param model: The encoder type to use (defaults to 'all-MiniLM-L6-v2')
     :return: The merged dataframe (pd.Dataframe).
     """
 
     print("Matching the entries...")
-    merged_data = []
+    merged_data = lt.merge(df_base, df_populate, model=model_encoder, suffixes=suffixes)
 
-    # Iterate over the pointers to merge the rows
-    pointers = list(filtered_similarity_scores.keys())
-
-    # Get the first element of pointers into a list
-    pointers_base = [pointer[0] for pointer in pointers]
-    remaining_pointers = [
-        (index, "empty") for index in range(len(df_base)) if index not in pointers_base
-    ]
-    pointers += remaining_pointers
-
-    # Sort the pointers by descending order by the first element of the tuple
-    pointers = sorted(pointers, key=lambda x: x[0])
-
-    # Create an emtpy dataframe with col size as df_pop_col_size
-    df_pop_col_size = len(df_populate.columns)
-    empty_row = pd.Series(
-        [None] * df_pop_col_size, index=[f"{col}_df2" for col in df_populate.columns]
-    )
-
-    for i, j in pointers:
-
-        # Get the row from df_base
-        df_base_row = df_base.iloc[i].copy()
-
-        if j != "empty":
-            # Get the row from df_populate and rename its columns
-            df_populate_row = df_populate.iloc[j].copy()
-            df_populate_row.index = [f"{col}_df2" for col in df_populate_row.index]
-            merged_row = pd.concat([df_base_row, df_populate_row])
-
-        else:
-            merged_row = pd.concat([df_base_row, empty_row])
-
-        # Concatenate the rows along the columns
-        merged_data.append(merged_row)
-
-    # Convert the list of merged rows to a DataFrame
-    result_df = pd.DataFrame(merged_data)
     print("Matching done!\n")
 
-    return result_df
+    return merged_data
 
 
-def merge_top_k(df_ranked: dict, args: argparse.Namespace):
+def enrich_dataframes(
+    df_ranked: dict,
+    df_fact_ranked: dict,
+    threshold: float = 0.7,
+    model_encoder: str = "all-MiniLM-L6-v2",
+):
 
-    print("\nMerging pairs of tables...")
-    # Generate pairs
+    # TODO: Ensure the colnames are consistent across all dataframes
+    df_enriched = {}
+    for key in df_ranked.keys():
+
+        df_base = df_ranked[key][1]
+        for key_fact in df_fact_ranked.keys():
+
+            df_populate = df_fact_ranked[key_fact][1]
+            df_combined = combine_dfs(df_base, df_populate, model_encoder=model_encoder)
+            df_combined = df_combined.drop(["id_lt_x", "id_lt_y"], axis=1)
+
+            if df_combined.loc[:, "score"].mean() > threshold:
+                df_base = df_combined
+
+        df_enriched[key] = df_base
+
+    return df_enriched
+
+
+# TODO: Cleanup colnames
+def merge_top_k(df_ranked: dict, api_key: str, args: argparse.Namespace):
+
+    print("Merging pairs of tables...")
+
+    # Get the keys of the dataframes and the first dataframe
     keys = list(df_ranked.keys())
-    table_pairs = list(itertools.combinations(keys, 2))
+    df_base = df_ranked[keys[0]]
 
-    for pair in table_pairs:
+    # Iterate through the remaining dataframes and merge them
+    for key in keys[1:]:
 
-        print(pair)
-        df_first = df_ranked[pair[0]][1]
-        df_second = df_ranked[pair[1]][1]
-
-        score_dict, _ = compute_similarity_entries_row(
-            df_base=df_first, df_populate=df_second
+        print(f"Merging {key} with the current base dataframe")
+        df_populate = df_ranked[key]
+        df_combined = combine_dfs(
+            df_base, df_populate, model_encoder=args.model_encoder
         )
 
-        # score_dict_col, _ = compute_similarity_entries_col(
-        #     df_base=df_first, df_populate=df_second
-        # )
-
-    # # Threshold based on table size
-    # threshold = 2 * args.threshold / len(df_second)
-
-    # # Filter similarity scores based on threshold
-    # filtered_similarity_scores = {k: v for k, v in score_dict.items() if v >= threshold}
-    # sorted_similarity_scores = dict(sorted(score_dict.items(), ke=lambda x: x[1]))
-
-    # for k, v in sorted(score_dict.items(), key=lambda item: (item[0][0], -item[1])):
-    #     sorted_dict[k] = v
-
-    pprint.pprint(score_dict)
-
-    sys.exit()
-
-    print(f"Found {len(filtered_similarity_scores)} matches!\n")
-
-    final_df = combine_dfs(df_first, df_second, filtered_similarity_scores)
-    # final_df = final_df.drop(f"{highest_similar_col_name}_df2", axis="columns")
+        if df_combined.loc[:, "score"].mean() > args.threshold:
+            df_base = df_combined
 
     # Remove columns which are the same
-    final_df = remove_duplicates(final_df)
+    final_df = remove_duplicates(df_base)
 
     # Rename columns in case there are similar names
-    final_df = rename_columns(final_df, api_key=OPENAI_TOKEN)
+    final_df = rename_columns(final_df, api_key=api_key)
 
     final_df.to_csv("out.csv", index=False)
     # print(final_df)

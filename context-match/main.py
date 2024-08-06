@@ -18,7 +18,12 @@ def config():
     parser.add_argument(
         "--threshold", default=0.7, type=float, help="Threshold for detecting matches"
     )
-
+    parser.add_argument(
+        "--model_encoder",
+        default="all-MiniLM-L6-v2",
+        type=str,
+        help="Model to encode the text",
+    )
     return parser.parse_args()
 
 
@@ -55,14 +60,19 @@ if __name__ == "__main__":
     # print(prompt)
     prompt_embedding = compute_embedding(prompt)
 
-    dfs_dic = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
+    df_dict = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
 
     # Converting the databases to pandas dataframes
-    dfs_dict_ranked, len_grouped_data = score_dataframes(dfs_dic, prompt_embedding)
+    df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
 
-    # Get the top-k similar dataframes
-    df_ranked = dict(list(dfs_dict_ranked.items())[:len_grouped_data])
+    df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
 
-    final_df = merge_top_k(df_ranked, args)
+    df_enriched["Company Profiles"].to_csv("enriched.csv", index=False)
+
+    final_df = merge_top_k(df_enriched, OPENAI_TOKEN, args)
+
+    print(final_df)
+
+    final_df.to_csv("final.csv")
 
     print("Dataset exported!")

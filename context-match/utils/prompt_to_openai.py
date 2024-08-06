@@ -85,7 +85,7 @@ def augment_column_names(
     return response
 
 
-def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 50):
+def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 125):
     """
     Rename the columns of a dataframe based on the content of the rows.
 
@@ -107,6 +107,8 @@ def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 50):
     response = prompt_openai(prompt, api_key, max_tokens)
     response = sub("```python", "", response)
     response = sub("```", "", response)
+
+    # print(response)
 
     df.columns = json.loads(response)
 
@@ -139,8 +141,9 @@ def get_names_columns(
 
     return response
 
+
 def rerank_similar_dataframes(
-        prompt: str, df_ranked: dict,  api_key: str, max_tokens: int = 400
+    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 400
 ):
     """
     Rerank the similar dataframes based on the prompt and description of the dataframes.
@@ -153,7 +156,7 @@ def rerank_similar_dataframes(
     # Iterate through the dictionary
     for _, items in df_ranked.items():
         desc += items[2] + "\n"
-        
+
     # print(desc)
     prompt = f"""Based on this prompt '{prompt}' and these table descriptions: {desc}.\n
                  Rank the tables according to relevance in descending order.
@@ -161,7 +164,7 @@ def rerank_similar_dataframes(
     response = prompt_openai(prompt, api_key, max_tokens)
     response = sub("```python", "", response)
     response = sub("```", "", response)
-    
+
     print(response)
 
     return

@@ -1,12 +1,12 @@
 from sentence_transformers import SentenceTransformer
 
 
-def compute_embedding(text: str, load_embeddings: bool = False):
+def compute_embedding(text: str, model_encoder: str = "all-MiniLM-L6-v2"):
     """
     Encode text using a transformer.
 
     :param name: The text to encode (str).
-    :param load_embeddings: Whether we want to load precomputed embeddings (bool; WIP).
+    :param model_encoder: The sentence transformer to use (default is 'all-MiniLM-L6-v2').
     :return: Text Embeddings (np.array).
     """
 
@@ -15,7 +15,7 @@ def compute_embedding(text: str, load_embeddings: bool = False):
         return text.lower()
 
     # Load pre-trained Sentence-BERT model
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer(model_encoder)
 
     processed_text = preprocess_text(text)
     text_embeddings = model.encode(processed_text, convert_to_tensor=True)

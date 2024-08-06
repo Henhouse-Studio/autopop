@@ -2,6 +2,7 @@ import os
 import notion_df
 import numpy as np
 import pandas as pd
+from rapidfuzz import fuzz
 from utils.make_embeddings import *
 from utils.compute_similarity import *
 
@@ -40,9 +41,11 @@ def get_page_links(notion_client, database_id):
         page_title = page["properties"]["Name"]["title"][0]["text"]["content"]
         page_tags = page["properties"]["Tags"]["multi_select"]
         for tag in page_tags:
+
             if tag["name"] == "Fact":
                 flag_tag = True
                 break
+
         page_id = page["id"]
         page_url = f"https://www.notion.so/{page_id.replace('-', '')}"
         names.append((flag_tag, page_title))
@@ -95,11 +98,7 @@ def get_dataframes(page_links: dict, page_names: list, notion_token: str):
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
         path_table = f"databases/{table_name}.csv"
-
-        if is_fact:
-            print(f"Found Fact table '{table_name}'")
-        else:
-            print(f"Found table '{table_name}'")
+        print(f"Found{' Fact' * is_fact} table '{table_name}'")
 
         for table in tables:
 
@@ -122,24 +121,25 @@ def get_dataframes(page_links: dict, page_names: list, notion_token: str):
                 df = get_table_notion(notion_token, temp)
                 df.to_csv(path_table)
 
-            df_dict[table_name] = df
+            df_dict[table_name] = (is_fact, df)
 
     print(f"Number of databases found: {len(df_dict)}\n")
     return df_dict
 
 
-def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
+def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
     """
     Score each dataframe based on similarity to a prompt embedding.
 
-    :param dfs_dic: A dictionary with table names as keys and pandas DataFrames as values.
-    :param prompt_embedding: A numpy array representing the embedding of the prompt.
-    :return: A tuple containing the dictionary of sorted dataframes by score and the number of top-k similar dataframes.
+    :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
+    :param prompt_embedding: A numpy array representing the embedding of the prompt (np.array).
+    :return: A tuple containing the sorted and fact dataframes (dict, dict).
     """
     print("Scoring databases based on prompt...")
 
     df_dict = {}
-    for table_name, df in dfs_dic.items():
+    df_fact_dict = {}
+    for table_name, (is_fact, df) in dfs_dict.items():
 
         col_names = list(df.columns)
         sample = df.sample(n=1, random_state=42)
@@ -153,19 +153,38 @@ def score_dataframes(dfs_dic: pd.DataFrame, prompt_embedding: np.array):
         field_embeddings = compute_embedding(desc)
         similarity_score = compute_similarity(prompt_embedding, field_embeddings)
         similarity_score = round(similarity_score * 100, 2)
-        df_dict[table_name] = (similarity_score, df, desc)
+
+        if is_fact:
+            df_fact_dict[table_name] = (similarity_score, df, desc)
+        else:
+            df_dict[table_name] = (similarity_score, df, desc)
 
     # sorting the dictionary based on similarity score
     df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
+    df_fact_dict = dict(
+        sorted(df_fact_dict.items(), key=lambda x: x[1][0], reverse=True)
+    )
 
     len_grouped_data = get_top_k(df_dict)
+    len_fact_group = get_top_k(df_fact_dict)
+
     print(f"Selecting Top-{len_grouped_data} from:")
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_dict.items()):
         print(f"[{i}]:", value[0], key)
 
-    return df_dict, get_top_k(df_dict)
+    print(f"Selecting Top-{len_fact_group} Fact tables from:")
+
+    # printing similarity score, name of df_ranked
+    for i, (key, value) in enumerate(df_fact_dict.items()):
+        print(f"[{i}]:", value[0], key)
+
+    # Get the top-k similar dataframes
+    df_ranked = dict(list(df_dict.items())[:len_grouped_data])
+    df_fact_ranked = dict(list(df_fact_dict.items())[:len_fact_group])
+
+    return df_ranked, df_fact_ranked
 
 
 def get_top_k(dfs_dict_ranked):
@@ -202,30 +221,37 @@ def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
     :param threshold: The similarity threshold for considering columns as duplicates.
     :return: A pandas DataFrame with duplicate columns removed.
     """
+    # Convert threshold to a percentage for rapidfuzz
+    threshold = threshold * 100
 
-    # TODO: Use fuzzy matching instead
+    # Create a set to keep track of columns to drop
+    columns_to_drop = set()
+    columns_to_rename = {}
 
     colnames_df = list(df.columns)
-    colnames_pop = [colname for colname in colnames_df if "_df2" in colname]
-    colnames_base = list(set(colnames_df) - set(colnames_pop))
 
-    for colname_b in colnames_base:
+    # Iterate through columns to compare each with others
+    for i, col1 in enumerate(colnames_df):
+        if col1 in columns_to_drop:
+            continue
 
-        colnames_pop_copy = colnames_pop.copy()
-        for colname_p in colnames_pop_copy:
+        for col2 in colnames_df[i + 1 :]:
+            if col2 in columns_to_drop:
+                continue
 
-            matches = df[colname_b] == df[colname_p]
-            similarity_ratio = matches.sum() / len(matches)
+            # Calculate the similarity between column names
+            similarity = fuzz.ratio(col1, col2)
+            if similarity >= threshold:
+                # If columns are similar, mark one for dropping
+                columns_to_drop.add(col2)
+                # Determine new name for the retained column
+                base_name = col1.split("_")[0] if "_" in col1 else col1
+                columns_to_rename[col1] = base_name
 
-            if similarity_ratio >= threshold:
-                df.drop(colname_p, axis="columns", inplace=True)
-                colnames_pop.remove(colname_p)
+    # Drop the identified duplicate columns
+    df = df.drop(columns=columns_to_drop)
 
-    df.rename(
-        columns=lambda x: (
-            x.replace("_df2", "") if x.replace("_df2", "") not in colnames_base else x
-        ),
-        inplace=True,
-    )
+    # Rename columns to their base names
+    df = df.rename(columns=columns_to_rename)
 
     return df
