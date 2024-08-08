@@ -82,7 +82,7 @@ def get_table_links_from_pages(notion, page_links):
     return page_table_links
 
 
-def get_dataframes(page_links: dict, page_names: list, notion_token: str):
+def get_dataframes(page_links: dict, page_names: list, notion_token: str, args: argparse.Namespace):
     """
     Retrieve dataframes from Notion pages and store them locally if not already saved.
 
@@ -97,17 +97,17 @@ def get_dataframes(page_links: dict, page_names: list, notion_token: str):
 
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
-        path_table = f"databases/{table_name}.csv"
+        path_table = f"databases/table_of_tables/{table_name}.csv"
         print(f"Found{' Fact' * is_fact} table '{table_name}'")
 
         for table in tables:
 
             id = table.split("#")
             temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
-
+            
             if is_fact:
 
-                if os.path.isfile(path_table):
+                if os.path.isfile(path_table) and args.load_local_tables:
                     df = pd.read_csv(path_table)
 
                 else:
@@ -117,9 +117,14 @@ def get_dataframes(page_links: dict, page_names: list, notion_token: str):
                     df = get_table_notion(notion_token, temp)
                     df.to_csv(path_table, index=False)
 
+
             else:
-                df = get_table_notion(notion_token, temp)
-                df.to_csv(path_table)
+                if os.path.isfile(path_table) and args.load_local_tables:
+                    df = pd.read_csv(path_table)
+                    
+                else:
+                    df = get_table_notion(notion_token, temp)
+                    df.to_csv(path_table)
 
             df_dict[table_name] = (is_fact, df)
 
@@ -172,13 +177,13 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_dict.items()):
-        print(f"[{i}]:", value[0], key)
+        print(f"[{i+1}]:", value[0], key)
 
     print(f"Selecting Top-{len_fact_group} Fact tables from:")
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_fact_dict.items()):
-        print(f"[{i}]:", value[0], key)
+        print(f"[{i+1}]:", value[0], key)
 
     # Get the top-k similar dataframes
     df_ranked = dict(list(df_dict.items())[:len_grouped_data])
@@ -212,6 +217,29 @@ def get_top_k(dfs_dict_ranked):
 
     return top_k
 
+def score_fields(dfs_dict: dict, prompt_embedding: np.array):
+    """
+    Score each dataframe based on similarity to a prompt embedding.
+
+    :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
+    :param prompt_embedding: A numpy array representing the embedding of the prompt (np.array).
+    :return: A tuple containing the sorted and fact dataframes (dict, dict).
+    """
+    print("Scoring table of fields based on prompt...")
+
+    # iterate over each row from the dfs_dict 
+    for index, row in dfs_dict.iterrows():
+
+        # compute similarity score with prompt embedding
+        similarity_score = compute_similarity(row["embedding"], prompt_embedding)
+        similarity_score = round(similarity_score * 100, 2)
+
+        # append the similarity score to the dataframe
+        dfs_dict.at[index, "similarity_score"] = similarity_score
+
+    dfs_dict.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
+
+    return dfs_dict
 
 def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
     """
