@@ -232,15 +232,20 @@ def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
 
     # Iterate through columns to compare each with others
     for i, col1 in enumerate(colnames_df):
+
         if col1 in columns_to_drop:
             continue
 
         for col2 in colnames_df[i + 1 :]:
+
             if col2 in columns_to_drop:
                 continue
 
-            # Calculate the similarity between column names
-            similarity = fuzz.ratio(col1, col2)
+            # Calculate the similarity between column contents
+            str_col1 = " ".join([str(i) for i in df[col1]])
+            str_col2 = " ".join([str(i) for i in df[col2]])
+
+            similarity = fuzz.ratio(str_col1, str_col2)
             if similarity >= threshold:
                 # If columns are similar, mark one for dropping
                 columns_to_drop.add(col2)
@@ -248,8 +253,11 @@ def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
                 base_name = col1.split("_")[0] if "_" in col1 else col1
                 columns_to_rename[col1] = base_name
 
+    # Remove Score and ID columns too
+
     # Drop the identified duplicate columns
-    df = df.drop(columns=columns_to_drop)
+    # print("To drop:", columns_to_drop)
+    df = df.drop(columns=columns_to_drop, axis="columns")
 
     # Rename columns to their base names
     df = df.rename(columns=columns_to_rename)

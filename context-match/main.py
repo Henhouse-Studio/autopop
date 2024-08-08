@@ -67,11 +67,11 @@ if __name__ == "__main__":
 
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
 
-    df_enriched["Company Profiles"].to_csv("enriched.csv", index=False)
+    # df_enriched["LinkedIn Profiles"].to_csv("enriched.csv", index=False)
 
     final_df = merge_top_k(df_enriched, OPENAI_TOKEN, args)
 
-    print(final_df)
+    # # print(final_df)
 
     final_df.to_csv("final.csv")
 

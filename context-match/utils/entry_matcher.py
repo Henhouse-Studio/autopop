@@ -26,10 +26,7 @@ def combine_dfs(
     :return: The merged dataframe (pd.Dataframe).
     """
 
-    print("Matching the entries...")
     merged_data = lt.merge(df_base, df_populate, model=model_encoder, suffixes=suffixes)
-
-    print("Matching done!\n")
 
     return merged_data
 
@@ -41,7 +38,6 @@ def enrich_dataframes(
     model_encoder: str = "all-MiniLM-L6-v2",
 ):
 
-    # TODO: Ensure the colnames are consistent across all dataframes
     df_enriched = {}
     for key in df_ranked.keys():
 
@@ -49,6 +45,14 @@ def enrich_dataframes(
         for key_fact in df_fact_ranked.keys():
 
             df_populate = df_fact_ranked[key_fact][1]
+
+            # Check for matching column names between the base and populate dataframes
+            matching_columns = df_base.columns.intersection(df_populate.columns)
+            if matching_columns.empty:
+                print(f"No matching columns between {key} and {key_fact}. Skipping...")
+                continue
+
+            # Combine the dataframes if there are matching columns
             df_combined = combine_dfs(df_base, df_populate, model_encoder=model_encoder)
             df_combined = df_combined.drop(["id_lt_x", "id_lt_y"], axis=1)
 
@@ -63,7 +67,7 @@ def enrich_dataframes(
 # TODO: Cleanup colnames
 def merge_top_k(df_ranked: dict, api_key: str, args: argparse.Namespace):
 
-    print("Merging pairs of tables...")
+    print("Merging table pairs...")
 
     # Get the keys of the dataframes and the first dataframe
     keys = list(df_ranked.keys())
@@ -72,12 +76,13 @@ def merge_top_k(df_ranked: dict, api_key: str, args: argparse.Namespace):
     # Iterate through the remaining dataframes and merge them
     for key in keys[1:]:
 
-        print(f"Merging {key} with the current base dataframe")
+        print(f"Merging '{key}' with the current base dataframe")
         df_populate = df_ranked[key]
         df_combined = combine_dfs(
             df_base, df_populate, model_encoder=args.model_encoder
         )
 
+        df_combined.to_csv("combined.csv")
         if df_combined.loc[:, "score"].mean() > args.threshold:
             df_base = df_combined
 
@@ -87,7 +92,6 @@ def merge_top_k(df_ranked: dict, api_key: str, args: argparse.Namespace):
     # Rename columns in case there are similar names
     final_df = rename_columns(final_df, api_key=api_key)
 
-    final_df.to_csv("out.csv", index=False)
     # print(final_df)
 
     return final_df
