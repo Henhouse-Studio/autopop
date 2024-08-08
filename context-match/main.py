@@ -65,10 +65,8 @@ if __name__ == "__main__":
     # prompt = "Get me a table of people's job profiles"
 
     # Enrichment of the prompt
-    prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN,
-                           expand_with_syn = True,
-                           expand_with_openAI = True,
-                           print_prompt = True)
+    prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN, print_prompt = True,
+                           expand_with_syn = True, expand_with_openAI = True)
     
     prompt_embedding = compute_embedding(prompt)
 
