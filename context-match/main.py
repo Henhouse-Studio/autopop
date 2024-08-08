@@ -1,3 +1,4 @@
+import sys
 import json
 import argparse
 from notion_client import Client
@@ -9,6 +10,7 @@ from utils.fetch_table_notion import *
 from utils.compute_similarity import *
 from utils.entry_matcher import *
 from utils.prompt_to_openai import *
+from utils.verbosity import *
 
 
 # Argparser:
@@ -24,11 +26,19 @@ def config():
         type=str,
         help="Model to encode the text",
     )
+    parser.add_argument(
+        "--load_local_tables",
+        default=True,
+        type=bool,
+        help="Load saved csv tables from local storage",
+    )
     return parser.parse_args()
 
 
 # Execution
 if __name__ == "__main__":
+    
+    suppress_warnings()
 
     # Get the argparse arguments
     args = config()
@@ -55,12 +65,22 @@ if __name__ == "__main__":
     # prompt = "Get me a table of people's job profiles"
 
     # Enrichment of the prompt
-    prompt = expand_prompt_with_synonyms(prompt)
-    prompt = get_enriched_prompt(prompt, api_key=OPENAI_TOKEN)
-    # print(prompt)
+    prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN,
+                           expand_with_syn = True,
+                           expand_with_openAI = True,
+                           print_prompt = True)
+    
     prompt_embedding = compute_embedding(prompt)
 
-    df_dict = get_dataframes(page_table_links, page_names, NOTION_TOKEN)
+    df_fields = pd.read_csv("databases/table_of_fields/table_of_fields.csv")
+
+    # compute the embeddings of the fields for every table
+    df_fields["embedding"] = df_fields["Description"].apply(compute_embedding)
+    df_fields.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
+
+    df_ranked = score_fields(df_fields, prompt_embedding)
+
+    df_dict = get_dataframes(page_table_links, page_names, NOTION_TOKEN, args)
 
     # Converting the databases to pandas dataframes
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
