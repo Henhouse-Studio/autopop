@@ -3,6 +3,7 @@ import notion_df
 import numpy as np
 import pandas as pd
 from rapidfuzz import fuzz
+from notion_client import Client
 from utils.make_embeddings import *
 from utils.compute_similarity import *
 
@@ -82,18 +83,25 @@ def get_table_links_from_pages(notion, page_links):
     return page_table_links
 
 
-def get_dataframes(page_links: dict, page_names: list, notion_token: str, args: argparse.Namespace):
+def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace):
     """
     Retrieve dataframes from Notion pages and store them locally if not already saved.
 
-    :param page_links: A dictionary with page links as keys and list of table links as values.
-    :param page_names: A list of tuples containing flags and page names.
     :param notion_token: The Notion API token.
+    :param database_id: The ID of the Notion database.
     :return: A dictionary with table names as keys and pandas DataFrames as values.
     """
     print("Retrieving databases...")
+
+    # Initialize the Notion client
+    notion_client = Client(auth=notion_token)
+
+    # Get the page and table links from the database
+    page_names, page_links = get_page_links(notion_client, database_id)
+    page_table_links = get_table_links_from_pages(notion_client, page_links)
+
     df_dict = {}
-    for idx, tables in enumerate(page_links.values()):
+    for idx, tables in enumerate(page_table_links.values()):
 
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
