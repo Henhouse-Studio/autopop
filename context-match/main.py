@@ -58,7 +58,7 @@ if __name__ == "__main__":
     enriched_prompt = handle_prompt(
         prompt,
         api_key=OPENAI_TOKEN,
-        print_prompt=False,
+        print_prompt=True,
         expand_with_syn=True,
         expand_with_openAI=True,
     )

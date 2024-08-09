@@ -3,6 +3,7 @@ import argparse
 import pandas as pd
 from re import sub
 from openai import OpenAI
+import pprint as pp
 
 
 def prompt_openai(prompt: str, api_key: str, max_tokens: int = 50) -> str:
@@ -184,7 +185,7 @@ def get_relevant_columns(
     :return: A dictionary of relevant columns for each dataframe (dict).
     """
 
-    print("Getting relevant columns...")
+    print("\nGetting relevant columns...")
     dict_weights = {}
     for table_name, (_, _, desc) in df_ranked.items():
 
@@ -217,11 +218,9 @@ def get_relevant_columns(
         response = sub("```python", "", response)
         response = sub("```", "", response)
 
-        print(response)
-
         dict_weights[table_name] = json.loads(response.replace("'", '"'))
 
-    print(dict_weights)
+    pp.pprint(dict_weights)
 
     return dict_weights
 

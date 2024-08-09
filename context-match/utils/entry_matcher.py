@@ -18,7 +18,7 @@ def df_reweighting(df: pd.DataFrame, weights: dict):
     :param weights: The weights of each column (dict in the form of "colname: weight(int)").
     :return: The reweighted dataframe (pd.DataFrame).
     """
-    print("Reweighting columns...")
+    # print("Reweighting columns...")
     # Create a copy of the dataframe to avoid modifying the original one
     df_reweighted = df.copy()
 
@@ -73,6 +73,7 @@ def enrich_dataframes(
     threshold: float = 0.7,
     model_encoder: str = "all-MiniLM-L6-v2",
 ):
+    print("\nEnriching dataframes with Fact Tables...")
 
     df_enriched = {}
     for key in df_ranked.keys():
@@ -85,7 +86,7 @@ def enrich_dataframes(
             # Check for matching column names between the base and populate dataframes
             matching_columns = df_base.columns.intersection(df_populate.columns)
             if matching_columns.empty:
-                print(f"No matching columns between {key} and {key_fact}. Skipping...")
+                print(f"No matching columns between '{key}' and '{key_fact}'. Skipping...")
                 continue
 
             # Combine the dataframes if there are matching columns
@@ -104,7 +105,7 @@ def merge_top_k(
     df_ranked: dict, dict_weights: dict, api_key: str, args: argparse.Namespace
 ):
 
-    print("Merging table pairs...")
+    print("\nMerging table pairs...")
 
     # Get the keys of the dataframes and the first dataframe
     table_names = list(df_ranked.keys())
@@ -114,7 +115,7 @@ def merge_top_k(
     # Iterate through the remaining dataframes and merge them
     for table_name in table_names[1:]:
 
-        print(f"Merging '{table_name}' with the current base dataframe")
+        print(f"Merging current base dataframe with '{table_name}'")
         df_populate = df_ranked[table_name]
         pop_weights = dict_weights[table_name]
         df_combined = combine_dfs(df_base, df_populate, base_weights, pop_weights)
