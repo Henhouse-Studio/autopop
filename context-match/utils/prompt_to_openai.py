@@ -86,7 +86,7 @@ def augment_column_names(
     return response
 
 
-def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 125):
+def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 200):
     """
     Rename the columns of a dataframe based on the content of the rows.
 
@@ -117,7 +117,7 @@ def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 125):
 
 
 def get_names_columns(
-    prompt: str, col_names: list, api_key: str, max_tokens: int = 800
+    prompt: str, col_names: list, api_key: str, max_tokens: int = 500
 ):
     """
     Get additional column names that could be useful for the data.
@@ -170,7 +170,10 @@ def rerank_similar_dataframes(
 
     return
 
-def get_relevant_columns(prompt: str, df_ranked: dict, api_key: str):
+
+def get_relevant_columns(
+    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
+):
     """
     Get the relevant columns from the dataframes based on the prompt.
 
@@ -178,42 +181,49 @@ def get_relevant_columns(prompt: str, df_ranked: dict, api_key: str):
     :param df_ranked: A dictionary of dataframes ranked by similarity score.
                     : df_ranked[table_name] = (similarity_score, df, desc)
     :param api_key: The OpenAI API key for authentication.
-    :return: A dictionary of relevant columns for each dataframe.
+    :return: A dictionary of relevant columns for each dataframe (dict).
     """
-    print("Getting relevant columns")
-    df_masks = {}
-    for table_name, (_, df, desc) in df_ranked.items():
-        
-        # prompt_v1 = f"""Based on this prompt:\n{prompt}\n
+
+    print("Getting relevant columns...")
+    dict_weights = {}
+    for table_name, (_, _, desc) in df_ranked.items():
+
+        # prompt = f"""Based on this prompt:\n{prompt}\n
         #              Get me the relevant columns from this table.
         #              The description of the table is: {desc}
         #              This is an extract from the table: {df.head().to_string()}
         #              Only provide me the names of the columns not the actual data.
         #              Return it as a Python list and nothing else."""
-        
-        # prompt_v2 = f"""Based on this prompt:\n
+
+        # prompt = f"""Based on this prompt:\n
         #              {prompt}\n
         #              I want you to analyse this dataframe and tell me for each column (field) how relevant is to the prompt. Get me only the relevant fields for instance if my prompt is: "Get me a table of cats" and the columns are "[Name, Age, ]". For the analyzing part take a look into the actual data (the entries) to get a score for the weights.
         #             Here is as extract from the dataframe:
         #             {desc}
         #             Return it as a Python list and nothing else."""
-        
-        prompt_v3 = f"""Based on this prompt:\n
+
+        prompt = f"""Based on this prompt:\n
                     {prompt}\n
                     Analyze the below dataframe and select the most relevant column names based on the above prompt.
                     {desc}
-                    Only return the column names as a python list (outside of a variable).
+                    Return only the relevant column names as a python dictionary (outside of a variable), with the key being the
+                    column name, and the value being the importance score of said column with respect to the prompt.
+                    Ensure the importance scores are all integers (ranging from 1-10, with 10 being the highest score) 
+                    and only return the dictionary.
                     """
-        
-        response = prompt_openai(prompt_v3, api_key)
+
+        response = prompt_openai(prompt, api_key, max_tokens=max_tokens)
 
         response = sub("```python", "", response)
         response = sub("```", "", response)
-        
-        df_masks[table_name] = json.loads(response.replace("'", "\""))
 
-    print(df_masks)
-    return df_masks
+        print(response)
+
+        dict_weights[table_name] = json.loads(response.replace("'", '"'))
+
+    print(dict_weights)
+
+    return dict_weights
 
 
 if __name__ == "__main__":

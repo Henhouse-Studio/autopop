@@ -163,7 +163,7 @@ def compute_similarity_entries_row(df_base: pd.DataFrame, df_populate: pd.DataFr
     # pprint.pprint(softmax_scores_dict)
     print("Finished computing row similarities!\n")
 
-    return converted_scores, None
+    return converted_scores
 
 
 def compute_similarity_entries_col(df_base: pd.DataFrame, df_populate: pd.DataFrame):

@@ -1,4 +1,10 @@
+import numpy as np
 from sentence_transformers import SentenceTransformer
+
+
+def normalize_embeddings(embeddings):
+
+    return embeddings / np.linalg.norm(embeddings, axis=0, keepdims=True)
 
 
 def compute_embedding(text: str, model_encoder: str = "all-MiniLM-L6-v2"):
@@ -19,6 +25,7 @@ def compute_embedding(text: str, model_encoder: str = "all-MiniLM-L6-v2"):
 
     processed_text = preprocess_text(text)
     text_embeddings = model.encode(processed_text, convert_to_tensor=True)
+    # print(text_embeddings.cpu().detach().numpy().shape)
+    text_embeddings = normalize_embeddings(text_embeddings.cpu().detach().numpy())
 
-    return text_embeddings.cpu().detach().numpy()
-    # return text_embeddings
+    return text_embeddings

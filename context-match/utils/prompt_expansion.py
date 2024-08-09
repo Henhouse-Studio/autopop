@@ -54,10 +54,16 @@ def get_synonyms(word, max_synonyms=3):
     return synonyms
 
 
-def handle_prompt(prompt, api_key: str, expand_with_syn: bool, expand_with_openAI: bool, print_prompt: bool):
-    """ 
+def handle_prompt(
+    prompt,
+    api_key: str,
+    expand_with_syn: bool,
+    expand_with_openAI: bool,
+    print_prompt: bool = False,
+):
+    """
     Function to handle the prompt enrichment process
-    
+
     :param prompt: The prompt to enrich (str).
     :param api_key: The OpenAI API key (str).
     :param expand_with_syn: Expand the prompt with synonyms (bool).
@@ -72,9 +78,10 @@ def handle_prompt(prompt, api_key: str, expand_with_syn: bool, expand_with_openA
         prompt = get_enriched_prompt(prompt, api_key=api_key)
 
     if print_prompt:
-         print(f"The input prompt is: \n{prompt}")
-    
+        print(f"The input prompt is: \n{prompt}")
+
     return prompt
+
 
 # Function to expand prompt with synonyms and append as keywords
 def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
@@ -96,10 +103,13 @@ def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
                 keywords.add(synonym)
                 added_words.add(synonym)
 
-    keywords_str = "\n- These are keywords extracted from the prompt: " + ", ".join(keywords)
+    keywords_str = "\n- These are keywords extracted from the prompt: " + ", ".join(
+        keywords
+    )
     return prompt + ", " + keywords_str
 
-def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens:int = 250):
+
+def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 250):
     """
     Get the enriched prompt from OpenAI's API.
 
@@ -107,11 +117,14 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens:int = 250
     :param api_key: The OpenAI API key (str).
     :return: The enriched prompt (str).
     """
-    prompt = original_prompt + "\n\nBased on the prompt above, what columns should be present in the database? Return it as a Python list and nothing else."
+    prompt = (
+        original_prompt
+        + "\n\nBased on the prompt above, what columns should be present in the database? Return it as a Python list and nothing else."
+    )
 
     response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=max_tokens)
     response = sub("```python", "", response)
-    response = sub("```", "", response).replace("'", "\"")
+    response = sub("```", "", response).replace("'", '"')
 
     # Check for empty response
     if not response:
@@ -129,8 +142,17 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens:int = 250
         raise ValueError("Decoded JSON is not a list or dict")
 
     # Convert the JSON response to a string
-    response = ', '.join(response_json) if isinstance(response_json, list) else ', '.join(response_json.values())
+    response = (
+        ", ".join(response_json)
+        if isinstance(response_json, list)
+        else ", ".join(response_json.values())
+    )
 
-    enriched_prompt = original_prompt + ".\n- The table should contain column names similar to: " + response + '\n'
+    enriched_prompt = (
+        original_prompt
+        + ".\n- The table should contain column names similar to: "
+        + response
+        + "\n"
+    )
 
     return enriched_prompt

@@ -36,7 +36,7 @@ def config():
 
 # Execution
 if __name__ == "__main__":
-    
+
     # Suppress warnings and logging
     suppress_warnings()
 
@@ -53,14 +53,15 @@ if __name__ == "__main__":
     # Prompt from the user
     prompt = "Get me a table of firms and their employees"
     # prompt = "Get me a table of employees and their job profiles"
-    # prompt = "Get me a table of employees, their skills and their job profiles"
-    # prompt = "Get me a table of employees"
-    # prompt = "Get me a table of people's job profiles"
-    # prompt = "Get me a table of famous authors"
 
     # Enrichment of the prompt
-    enriched_prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN, print_prompt = True,
-                           expand_with_syn = True, expand_with_openAI = True)
+    enriched_prompt = handle_prompt(
+        prompt,
+        api_key=OPENAI_TOKEN,
+        print_prompt=False,
+        expand_with_syn=True,
+        expand_with_openAI=True,
+    )
     prompt_embedding = compute_embedding(enriched_prompt)
 
     # compute the embeddings of the fields for every table
@@ -68,21 +69,21 @@ if __name__ == "__main__":
     # df_fields["embedding"] = df_fields["Description"].apply(compute_embedding)
     # df_fields.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
     # df_fields_ranked = score_fields(df_fields, prompt_embedding)
-    
+
     # Get the dataframes from Notion
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
 
     # Score each table how similar it is to the prompt
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
 
-    df_masks = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN)
+    dict_weightss = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN)
 
     # Enrich the dataframes with Fact tables
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
     # df_enriched["LinkedIn Profiles"].to_csv("enriched.csv", index=False)
 
-    # Merge the enriched dataframes 
-    final_df = merge_top_k(df_enriched, OPENAI_TOKEN, args)
+    # Merge the enriched dataframes
+    final_df = merge_top_k(df_enriched, dict_weightss, OPENAI_TOKEN, args)
     final_df.to_csv("final.csv")
 
     print("Dataset exported!")
