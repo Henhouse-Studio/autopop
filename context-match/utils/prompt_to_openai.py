@@ -1,4 +1,5 @@
 import json
+import argparse
 import pandas as pd
 from re import sub
 from openai import OpenAI
@@ -168,6 +169,51 @@ def rerank_similar_dataframes(
     print(response)
 
     return
+
+def get_relevant_columns(prompt: str, df_ranked: dict, api_key: str):
+    """
+    Get the relevant columns from the dataframes based on the prompt.
+
+    :param prompt: The prompt to get the relevant columns.
+    :param df_ranked: A dictionary of dataframes ranked by similarity score.
+                    : df_ranked[table_name] = (similarity_score, df, desc)
+    :param api_key: The OpenAI API key for authentication.
+    :return: A dictionary of relevant columns for each dataframe.
+    """
+    print("Getting relevant columns")
+    df_masks = {}
+    for table_name, (_, df, desc) in df_ranked.items():
+        
+        # prompt_v1 = f"""Based on this prompt:\n{prompt}\n
+        #              Get me the relevant columns from this table.
+        #              The description of the table is: {desc}
+        #              This is an extract from the table: {df.head().to_string()}
+        #              Only provide me the names of the columns not the actual data.
+        #              Return it as a Python list and nothing else."""
+        
+        # prompt_v2 = f"""Based on this prompt:\n
+        #              {prompt}\n
+        #              I want you to analyse this dataframe and tell me for each column (field) how relevant is to the prompt. Get me only the relevant fields for instance if my prompt is: "Get me a table of cats" and the columns are "[Name, Age, ]". For the analyzing part take a look into the actual data (the entries) to get a score for the weights.
+        #             Here is as extract from the dataframe:
+        #             {desc}
+        #             Return it as a Python list and nothing else."""
+        
+        prompt_v3 = f"""Based on this prompt:\n
+                    {prompt}\n
+                    Analyze the below dataframe and select the most relevant column names based on the above prompt.
+                    {desc}
+                    Only return the column names as a python list (outside of a variable).
+                    """
+        
+        response = prompt_openai(prompt_v3, api_key)
+
+        response = sub("```python", "", response)
+        response = sub("```", "", response)
+        
+        df_masks[table_name] = json.loads(response.replace("'", "\""))
+
+    print(df_masks)
+    return df_masks
 
 
 if __name__ == "__main__":

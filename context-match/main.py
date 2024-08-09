@@ -56,23 +56,26 @@ if __name__ == "__main__":
     # prompt = "Get me a table of employees, their skills and their job profiles"
     # prompt = "Get me a table of employees"
     # prompt = "Get me a table of people's job profiles"
+    # prompt = "Get me a table of famous authors"
 
     # Enrichment of the prompt
-    prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN, print_prompt = True,
+    enriched_prompt = handle_prompt(prompt, api_key=OPENAI_TOKEN, print_prompt = True,
                            expand_with_syn = True, expand_with_openAI = True)
-    prompt_embedding = compute_embedding(prompt)
+    prompt_embedding = compute_embedding(enriched_prompt)
 
     # compute the embeddings of the fields for every table
-    df_fields = pd.read_csv("databases/table_of_fields/table_of_fields.csv")
-    df_fields["embedding"] = df_fields["Description"].apply(compute_embedding)
-    df_fields.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
-    df_fields_ranked = score_fields(df_fields, prompt_embedding)
+    # df_fields = pd.read_csv("databases/table_of_fields/table_of_fields.csv")
+    # df_fields["embedding"] = df_fields["Description"].apply(compute_embedding)
+    # df_fields.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
+    # df_fields_ranked = score_fields(df_fields, prompt_embedding)
     
     # Get the dataframes from Notion
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
 
     # Score each table how similar it is to the prompt
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
+
+    df_masks = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN)
 
     # Enrich the dataframes with Fact tables
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)

@@ -99,7 +99,7 @@ def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
     keywords_str = "\n- These are keywords extracted from the prompt: " + ", ".join(keywords)
     return prompt + ", " + keywords_str
 
-def get_enriched_prompt(original_prompt: str, api_key: str):
+def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens:int = 250):
     """
     Get the enriched prompt from OpenAI's API.
 
@@ -109,11 +109,15 @@ def get_enriched_prompt(original_prompt: str, api_key: str):
     """
     prompt = original_prompt + "\n\nBased on the prompt above, what columns should be present in the database? Return it as a Python list and nothing else."
 
-    response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=50)
+    response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=max_tokens)
     response = sub("```python", "", response)
-    response = sub("```", "", response)
+    response = sub("```", "", response).replace("'", "\"")
 
-      # Try to decode the JSON
+    # Check for empty response
+    if not response:
+        raise ValueError("Received empty response from API")
+
+    # Try to decode the JSON
     try:
         response_json = json.loads(response)
     except json.JSONDecodeError as e:
@@ -125,8 +129,8 @@ def get_enriched_prompt(original_prompt: str, api_key: str):
         raise ValueError("Decoded JSON is not a list or dict")
 
     # Convert the JSON response to a string
-    response_str = ', '.join(response_json) if isinstance(response_json, list) else ', '.join(response_json.values())
+    response = ', '.join(response_json) if isinstance(response_json, list) else ', '.join(response_json.values())
 
-    enriched_prompt = original_prompt + ".\n- The table should contain column names similar to: " + response_str + '\n'
+    enriched_prompt = original_prompt + ".\n- The table should contain column names similar to: " + response + '\n'
 
     return enriched_prompt

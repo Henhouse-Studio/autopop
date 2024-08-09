@@ -1,4 +1,5 @@
 import os
+import pickle
 import notion_df
 import numpy as np
 import pandas as pd
@@ -82,6 +83,22 @@ def get_table_links_from_pages(notion, page_links):
 
     return page_table_links
 
+def save_data_pickle(page_names, page_table_links, page_names_file='page_names.pkl', page_table_links_file='page_table_links.pkl'):
+    with open(page_names_file, 'wb') as f:
+        pickle.dump(page_names, f)
+    with open(page_table_links_file, 'wb') as f:
+        pickle.dump(page_table_links, f)
+    print(f"Data saved to {page_names_file} and {page_table_links_file}")
+
+
+def load_data_pickle(page_names_file='page_names.pkl', page_table_links_file='page_table_links.pkl'):
+    with open(page_names_file, 'rb') as f:
+        page_names = pickle.load(f)
+    with open(page_table_links_file, 'rb') as f:
+        page_table_links = pickle.load(f)
+    print(f"Data loaded from {page_names_file} and {page_table_links_file}")
+    return page_names, page_table_links
+
 
 def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace):
     """
@@ -92,13 +109,24 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     :return: A dictionary with table names as keys and pandas DataFrames as values.
     """
     print("Retrieving databases...")
+    
+    page_names_file = 'databases/table_of_tables/page_names.pkl'
+    page_table_links_file = 'databases/table_of_tables/page_table_links.pkl'
 
-    # Initialize the Notion client
-    notion_client = Client(auth=notion_token)
+    if os.path.exists(page_names_file) and os.path.exists(page_table_links_file):
+        # Load saved data
+        page_names, page_table_links = load_data_pickle(page_names_file, page_table_links_file)
 
-    # Get the page and table links from the database
-    page_names, page_links = get_page_links(notion_client, database_id)
-    page_table_links = get_table_links_from_pages(notion_client, page_links)
+    else:
+        # Initialize the Notion client
+        notion_client = Client(auth=notion_token)
+
+        # Get the page and table links from the database
+        page_names, page_links = get_page_links(notion_client, database_id)
+        page_table_links = get_table_links_from_pages(notion_client, page_links)
+
+        # Save the data
+        save_data_pickle(page_names, page_table_links, page_names_file, page_table_links_file)
 
     df_dict = {}
     for idx, tables in enumerate(page_table_links.values()):
