@@ -10,7 +10,7 @@ from utils.compute_similarity import *
 from utils.entry_matcher import *
 from utils.prompt_to_openai import *
 from utils.verbosity import *
-
+from utils.seed_initializer import *
 
 # Argparser:
 def config():
@@ -42,6 +42,9 @@ def config():
 
 # Execution
 if __name__ == "__main__":
+
+    # Set the seed for reproducibility
+    set_seed()
 
     # Suppress warnings and logging
     suppress_warnings()
