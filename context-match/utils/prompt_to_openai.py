@@ -7,7 +7,7 @@ from openai import OpenAI
 
 
 def prompt_openai(
-    prompt: str, api_key: str, temperature: float = 0.0, max_tokens: int = 50
+    prompt: str, api_key: str, max_tokens: int = 50, temperature: float = 0.0
 ) -> str:
     """
     Send a prompt to the OpenAI API and get a response.
