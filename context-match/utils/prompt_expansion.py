@@ -45,13 +45,15 @@ except LookupError:
 
 # Function to get synonyms for a given word
 def get_synonyms(word, max_synonyms=3):
+
     synonyms = set()
     for syn in wordnet.synsets(word):
         for lemma in syn.lemmas():
             if len(synonyms) >= max_synonyms:
                 break
             synonyms.add(lemma.name())
-    return sorted(synonyms)[:max_synonyms]
+
+    return synonyms
 
 
 def handle_prompt(
@@ -104,8 +106,9 @@ def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
                 added_words.add(synonym)
 
     keywords_str = "\n- These are keywords extracted from the prompt: " + ", ".join(
-    sorted(keywords)
+        keywords
     )
+
     return prompt + ", " + keywords_str
 
 
@@ -133,6 +136,7 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     # Try to decode the JSON
     try:
         response_json = json.loads(response)
+
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
         raise

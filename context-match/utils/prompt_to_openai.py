@@ -1,15 +1,14 @@
 import json
+import pprint
 import argparse
 import pandas as pd
 from re import sub
 from openai import OpenAI
-import pprint as pp
 
 
 def prompt_openai(
-        prompt: str, api_key: str, temperature: float = 0.0, 
-        max_tokens: int = 50
-)-> str:
+    prompt: str, api_key: str, temperature: float = 0.0, max_tokens: int = 50
+) -> str:
     """
     Send a prompt to the OpenAI API and get a response.
 
@@ -172,15 +171,18 @@ def rerank_similar_dataframes(
     response = sub("```python", "", response)
     response = sub("```", "", response)
 
-    print(response)
+    # print(response)
 
     return
 
 
 def get_relevant_columns(
-    prompt: str, df_ranked: dict, api_key: str, args: argparse.Namespace = None, 
+    prompt: str,
+    df_ranked: dict,
+    api_key: str,
+    args: argparse.Namespace = None,
     max_tokens: int = 200,
-    
+    verbose: bool = False,
 ):
     """
     Get the relevant columns from the dataframes based on the prompt.
@@ -189,6 +191,7 @@ def get_relevant_columns(
     :param df_ranked: A dictionary of dataframes ranked by similarity score.
                     : df_ranked[table_name] = (similarity_score, df, desc)
     :param api_key: The OpenAI API key for authentication.
+    :param verbose: Whether to print the scores (bool, default = False).
     :return: A dictionary of relevant columns for each dataframe (dict).
     """
 
@@ -220,15 +223,17 @@ def get_relevant_columns(
                     and only return the dictionary.
                     """
 
-        response = prompt_openai(prompt, api_key, max_tokens=max_tokens, 
-                                 temperature=args.temperature)
+        response = prompt_openai(
+            prompt, api_key, max_tokens=max_tokens, temperature=args.temperature
+        )
 
         response = sub("```python", "", response)
         response = sub("```", "", response)
 
         dict_weights[table_name] = json.loads(response.replace("'", '"'))
 
-    pp.pprint(dict_weights)
+    if verbose:
+        pprint.pprint(dict_weights)
 
     return dict_weights
 

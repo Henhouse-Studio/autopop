@@ -83,18 +83,26 @@ def get_table_links_from_pages(notion, page_links):
 
     return page_table_links
 
-def save_data_pickle(page_names, page_table_links, page_names_file='page_names.pkl', page_table_links_file='page_table_links.pkl'):
-    with open(page_names_file, 'wb') as f:
+
+def save_data_pickle(
+    page_names,
+    page_table_links,
+    page_names_file="page_names.pkl",
+    page_table_links_file="page_table_links.pkl",
+):
+    with open(page_names_file, "wb") as f:
         pickle.dump(page_names, f)
-    with open(page_table_links_file, 'wb') as f:
+    with open(page_table_links_file, "wb") as f:
         pickle.dump(page_table_links, f)
     print(f"Data saved to {page_names_file} and {page_table_links_file}")
 
 
-def load_data_pickle(page_names_file='page_names.pkl', page_table_links_file='page_table_links.pkl'):
-    with open(page_names_file, 'rb') as f:
+def load_data_pickle(
+    page_names_file="page_names.pkl", page_table_links_file="page_table_links.pkl"
+):
+    with open(page_names_file, "rb") as f:
         page_names = pickle.load(f)
-    with open(page_table_links_file, 'rb') as f:
+    with open(page_table_links_file, "rb") as f:
         page_table_links = pickle.load(f)
     print(f"Data loaded from {page_names_file} and {page_table_links_file}")
     return page_names, page_table_links
@@ -109,13 +117,15 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     :return: A dictionary with table names as keys and pandas DataFrames as values.
     """
     print("Retrieving databases...")
-    
-    page_names_file = 'databases/table_of_tables/page_names.pkl'
-    page_table_links_file = 'databases/table_of_tables/page_table_links.pkl'
+
+    page_names_file = "databases/table_of_tables/page_names.pkl"
+    page_table_links_file = "databases/table_of_tables/page_table_links.pkl"
 
     if os.path.exists(page_names_file) and os.path.exists(page_table_links_file):
         # Load saved data
-        page_names, page_table_links = load_data_pickle(page_names_file, page_table_links_file)
+        page_names, page_table_links = load_data_pickle(
+            page_names_file, page_table_links_file
+        )
 
     else:
         # Initialize the Notion client
@@ -126,7 +136,9 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
         page_table_links = get_table_links_from_pages(notion_client, page_links)
 
         # Save the data
-        save_data_pickle(page_names, page_table_links, page_names_file, page_table_links_file)
+        save_data_pickle(
+            page_names, page_table_links, page_names_file, page_table_links_file
+        )
 
     df_dict = {}
     for idx, tables in enumerate(page_table_links.values()):
@@ -140,7 +152,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
             id = table.split("#")
             temp = f"https://www.notion.so/about-/{id[-1]}?v=eceee883ed684a75831aec55806e39d2"
-            
+
             if is_fact:
 
                 if os.path.isfile(path_table) and args.load_local_tables:
@@ -153,11 +165,10 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
                     df = get_table_notion(notion_token, temp)
                     df.to_csv(path_table, index=False)
 
-
             else:
                 if os.path.isfile(path_table) and args.load_local_tables:
                     df = pd.read_csv(path_table)
-                    
+
                 else:
                     df = get_table_notion(notion_token, temp)
                     df.to_csv(path_table)
@@ -228,12 +239,12 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
     return df_ranked, df_fact_ranked
 
 
-def get_top_k(dfs_dict_ranked):
+def get_top_k(dfs_dict_ranked: dict):
     """
     Get the top-k similar dataframes based on the similarity scores.
 
-    :param dfs_dict_ranked: A dictionary of dataframes ranked by similarity score.
-    :return: The number of top-k similar dataframes.
+    :param dfs_dict_ranked: A dictionary of dataframes ranked by similarity score (dict).
+    :return: The number of top-k similar dataframes (int).
     """
 
     data = [df[0] for df in dfs_dict_ranked.values()]
@@ -253,6 +264,7 @@ def get_top_k(dfs_dict_ranked):
 
     return top_k
 
+
 def score_fields(dfs_dict: dict, prompt_embedding: np.array):
     """
     Score each dataframe based on similarity to a prompt embedding.
@@ -263,7 +275,7 @@ def score_fields(dfs_dict: dict, prompt_embedding: np.array):
     """
     print("Scoring table of fields based on prompt...")
 
-    # iterate over each row from the dfs_dict 
+    # iterate over each row from the dfs_dict
     for index, row in dfs_dict.iterrows():
 
         # compute similarity score with prompt embedding
@@ -276,6 +288,7 @@ def score_fields(dfs_dict: dict, prompt_embedding: np.array):
     dfs_dict.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
 
     return dfs_dict
+
 
 def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
     """

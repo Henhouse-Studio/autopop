@@ -12,6 +12,7 @@ from utils.prompt_to_openai import *
 from utils.verbosity import *
 from utils.seed_initializer import *
 
+
 # Argparser:
 def config():
 
@@ -61,7 +62,7 @@ if __name__ == "__main__":
 
     # Prompt from the user
     prompt = "Get me a table of firms and their employees"
-    # prompt = "Get me a table of employees and their job profiles"
+    # prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
 
     # Enrichment of the prompt
     enriched_prompt = handle_prompt(

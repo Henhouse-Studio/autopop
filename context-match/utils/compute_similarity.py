@@ -128,12 +128,15 @@ def compute_column_embeddings(df: pd.DataFrame, desc: str = "a", colname: str = 
     return df_embeddings, sorted_columns
 
 
-def compute_similarity_entries_row(df_base: pd.DataFrame, df_populate: pd.DataFrame):
+def compute_similarity_entries_row(
+    df_base: pd.DataFrame, df_populate: pd.DataFrame, verbose: bool = False
+):
     """
     Compute the similarity scores between the rows of two dataframes.
 
     :param df_base: The dataframe to enrich (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment (pd.DataFrame).
+    :param verbose: Whether to print the scores (bool, default = False).
     :return softmax_scores_dict: The dict containing the similarity scores for matching (dict).
     It has the following format: '(idx_df1, idx_df2): score' between all entries.
     :return highest_similar_col_name: The column name used as the merging basis.
@@ -158,9 +161,9 @@ def compute_similarity_entries_row(df_base: pd.DataFrame, df_populate: pd.DataFr
         for key, value in similarity_scores.items()
     }
 
-    pprint.pprint(converted_scores)
+    if verbose:
+        pprint.pprint(converted_scores)
 
-    # pprint.pprint(softmax_scores_dict)
     print("Finished computing row similarities!\n")
 
     return converted_scores
@@ -213,7 +216,6 @@ def compute_similarity_entries_col(df_base: pd.DataFrame, df_populate: pd.DataFr
 
     pprint.pprint(converted_scores)
 
-    # pprint.pprint(softmax_scores_dict)
     print("Finished computing row similarities!\n")
 
     return converted_scores, most_similar_cols
