@@ -51,7 +51,7 @@ def get_synonyms(word, max_synonyms=3):
             if len(synonyms) >= max_synonyms:
                 break
             synonyms.add(lemma.name())
-    return synonyms
+    return sorted(synonyms)[:max_synonyms]
 
 
 def handle_prompt(
@@ -104,7 +104,7 @@ def expand_prompt_with_synonyms(prompt, max_synonyms_per_word=2):
                 added_words.add(synonym)
 
     keywords_str = "\n- These are keywords extracted from the prompt: " + ", ".join(
-        keywords
+    sorted(keywords)
     )
     return prompt + ", " + keywords_str
 

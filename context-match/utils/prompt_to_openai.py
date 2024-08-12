@@ -6,12 +6,16 @@ from openai import OpenAI
 import pprint as pp
 
 
-def prompt_openai(prompt: str, api_key: str, max_tokens: int = 50) -> str:
+def prompt_openai(
+        prompt: str, api_key: str, temperature: float = 0.0, 
+        max_tokens: int = 50
+)-> str:
     """
     Send a prompt to the OpenAI API and get a response.
 
     :param prompt: The text prompt to send to the OpenAI API.
     :param api_key: The OpenAI API key for authentication.
+    :param temperature: The randomness of the response (default is 0.0).
     :param max_tokens: The maximum number of tokens in the response.
     :return: The response text from the OpenAI API.
     """
@@ -24,6 +28,7 @@ def prompt_openai(prompt: str, api_key: str, max_tokens: int = 50) -> str:
             {"role": "user", "content": prompt},
         ],
         max_tokens=max_tokens,
+        temperature=temperature,
     )
 
     return response.choices[0].message.content.strip()
@@ -173,7 +178,9 @@ def rerank_similar_dataframes(
 
 
 def get_relevant_columns(
-    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
+    prompt: str, df_ranked: dict, api_key: str, args: argparse.Namespace = None, 
+    max_tokens: int = 200,
+    
 ):
     """
     Get the relevant columns from the dataframes based on the prompt.
@@ -213,7 +220,8 @@ def get_relevant_columns(
                     and only return the dictionary.
                     """
 
-        response = prompt_openai(prompt, api_key, max_tokens=max_tokens)
+        response = prompt_openai(prompt, api_key, max_tokens=max_tokens, 
+                                 temperature=args.temperature)
 
         response = sub("```python", "", response)
         response = sub("```", "", response)

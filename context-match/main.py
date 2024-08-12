@@ -31,6 +31,12 @@ def config():
         type=bool,
         help="Load saved csv tables from local storage",
     )
+    parser.add_argument(
+        "--temperature",
+        default=0.0,
+        type=float,
+        help="Temperature (randomness) for the OpenAI API",
+    )
     return parser.parse_args()
 
 
@@ -76,14 +82,14 @@ if __name__ == "__main__":
     # Score each table how similar it is to the prompt
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
 
-    dict_weightss = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN)
+    dict_weights = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN, args)
 
     # Enrich the dataframes with Fact tables
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
     # df_enriched["LinkedIn Profiles"].to_csv("enriched.csv", index=False)
 
     # Merge the enriched dataframes
-    final_df = merge_top_k(df_enriched, dict_weightss, OPENAI_TOKEN, args)
+    final_df = merge_top_k(df_enriched, dict_weights, OPENAI_TOKEN, args)
     final_df.to_csv("final.csv")
 
     print("Dataset exported!")
