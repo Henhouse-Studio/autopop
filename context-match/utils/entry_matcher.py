@@ -35,6 +35,47 @@ def df_reweighting(df: pd.DataFrame, weights: dict):
     return df_reweighted
 
 
+
+def group_scores_with_indices(scores_dict: dict, std_factor: int = 1):
+    """
+    Groups scores for each entry based on standard deviation while preserving indices.
+
+    :param scores_dict: A dictionary with keys as tuples (row, column) and values as scores.
+    :param std_factor: A multiplier for the standard deviation to determine group boundaries.
+    :return: A dictionary with keys as row indices and values as lists of grouped tuples (index, score).
+    """
+    grouped_scores = {}
+
+    # Collecting scores by row index along with their original indices
+    scores_by_row = {}
+    for (row, col), score in scores_dict.items():
+        if row not in scores_by_row:
+            scores_by_row[row] = []
+        scores_by_row[row].append(((row, col), score))
+
+    # Grouping scores by standard deviation within each row
+    for row, score_tuples in scores_by_row.items():
+        # Sort scores in descending order while keeping the index
+        score_tuples.sort(key=lambda x: x[1], reverse=True)
+        scores = [score for _, score in score_tuples]
+        std_dev = np.std(scores)
+
+        current_group = [score_tuples[0]]
+        groups = [current_group]
+
+        for i in range(1, len(score_tuples)):
+            if abs(score_tuples[i][1] - np.mean([x[1] for x in current_group])) <= std_dev * std_factor:
+                current_group.append(score_tuples[i])
+            else:
+                current_group = [score_tuples[i]]
+                groups.append(current_group)
+
+        grouped_scores[row] = groups
+
+    pprint.pprint(grouped_scores)
+
+    return grouped_scores
+
 def filter_row_matches(scores_dict: dict, std_factor: int = 1):
     """
     Get the top group of scores for each row based on standard deviation while preserving indices.
@@ -98,13 +139,19 @@ def combine_dfs(
     :param tolerance: How much to allow for potentially inaccurate matches (defaults to 0.15).
     The higher the tolerance the more indirect matches are allowed.
     :return: The merged dataframe (pd.DataFrame).
+
+    * Note on pd.update:
+        - If matched_base has a NaN value in the Location column, and matched_populate has a 
+          corresponding non-NaN value, matched_base will be updated with the value from matched_populate.
+        - If matched_base already has a non-NaN value, it will not be overwritten because overwrite=False.
+
+        # Update matched base DataFrame with populate DataFrame values
+        # matched_base.update(matched_populate, overwrite=False)
     """
 
     # Creating a mask based on the weight dict for the dataframes
-    base_mask = list(base_weights.keys())
-    pop_mask = list(pop_weights.keys())
-    df_entries_base = df_base[base_mask]
-    df_entries_pop = df_populate[pop_mask]
+    df_entries_base = df_base[list(base_weights.keys())]
+    df_entries_pop = df_populate[list(pop_weights.keys())]
 
     print("Computing between-row similarities...")
     scores = compute_similarity_entries_row(
@@ -115,34 +162,83 @@ def combine_dfs(
     # Filter the scores by group
     scores_f = filter_row_matches(scores)
 
-    # Extract the corresponding rows from each DataFrame using the index pairs in the dictionary
-    rows_df1 = df_base.loc[[i for i, _ in scores_f.keys()]]
-    rows_df2 = df_populate.loc[[j for _, j in scores_f.keys()]]
-    conf_values = pd.DataFrame(list(scores_f.values()), columns=["conf_values"])
+    ## Method 1
+    
+    # Identifying matched indices
+    matched_base_indices = [i for i, _ in scores_f.keys()]
+    matched_populate_indices = [j for _, j in scores_f.keys()]
 
-    # Reset index to prepare for merging
-    rows_df1.reset_index(drop=True, inplace=True)
-    rows_df2.reset_index(drop=True, inplace=True)
-    conf_values.reset_index(drop=True, inplace=True)
+    # Creating DataFrames for matched rows
+    matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
+    matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
 
-    # Merge the dataframes on the reset index
-    combined_df = pd.merge(
-        rows_df1,
-        rows_df2,
-        left_index=True,
-        right_index=True,
-        suffixes=("_base", "_pop"),
-    )
+    # Identify overlapping columns
+    overlapping_columns = matched_base.columns.intersection(matched_populate.columns)
 
-    # Add the confidence values to the merged dataframe
-    combined_df["conf_values"] = conf_values
+    # For overlapping columns, prioritize non-null values
+    for col in overlapping_columns:
+        matched_base[col] = matched_base[col].combine_first(matched_populate[col])
+        matched_populate.drop(columns=[col], inplace=True)
 
-    # Minmax scaled threshold
-    threshold = (1 - tolerance) * conf_values.quantile(0.25)
+    # Merging the matched DataFrames side by side
+    matched_df = pd.concat([matched_base, matched_populate], axis=1)
 
-    # Filter based on the confidence threshold
-    final_df = combined_df[combined_df["conf_values"] >= threshold.values[0]]
+    # Add the confidence values
+    matched_df['conf_values'] = list(scores_f.values())
+
+    # Filtering based on confidence threshold
+    threshold = (1 - tolerance) * pd.Series(list(scores_f.values())).quantile(0.25)
+    matched_df = matched_df[matched_df['conf_values'] >= threshold]
+
+    # Identifying unmatched rows
+    unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)].reset_index(drop=True)
+    unmatched_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)].reset_index(drop=True)
+
+    # Add NaN for missing data in unmatched rows
+    unmatched_base = unmatched_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_base.columns})
+    unmatched_populate = unmatched_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_populate.columns})
+
+    # Adding confidence values for unmatched rows
+    unmatched_base['conf_values'] = 0
+    unmatched_populate['conf_values'] = 0
+
+    # Combine matched and unmatched DataFrames
+    final_df = pd.concat([matched_df, unmatched_base, unmatched_populate], ignore_index=True)
+
+    ## Method 2
+
+    matched_base_indices = [i for i, _ in scores_f.keys()]
+    matched_populate_indices = [j for _, j in scores_f.keys()]
+
+    # Extract the corresponding matching rows from each DataFrame using the index pairs
+    matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
+    matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
+
+    # Combine matched DataFrames side by side and add confidence values
+    matched_df = pd.concat([matched_base, matched_populate.drop(columns=matched_base.columns, errors='ignore')], axis=1)
+    matched_df['conf_values'] = list(scores_f.values())
+
+    # Filter by confidence threshold
+    threshold = (1 - tolerance) * matched_df['conf_values'].quantile(0.25)
+    matched_df = matched_df[matched_df['conf_values'] >= threshold]
+
+    # Identify unmatched rows and assign NaN for missing columns
+    unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
+    unmatched_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)]
+
+    # Append unmatched rows with NaN filled columns
+    final_df = pd.concat([
+        matched_df,
+        unmatched_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_base.columns}),
+        unmatched_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_populate.columns})
+    ], ignore_index=True)
+
+    # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
+    final_df['conf_values'].fillna(0, inplace=True)
     final_df.to_csv("merged.csv", index=False)
+
+
+    sys.exit()
 
     return final_df
 
