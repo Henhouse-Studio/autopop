@@ -1,10 +1,8 @@
 import sys
 import pprint
 import argparse
-import itertools
 import pandas as pd
 import linktransformer as lt
-from typing import Tuple
 from utils.prompt_to_openai import *
 from utils.compute_similarity import *
 from utils.fetch_table_notion import *
@@ -216,7 +214,7 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    final_df.to_csv("merged.csv", index=False)
+    # final_df.to_csv("merged.csv", index=False)
 
     # sys.exit()
 
