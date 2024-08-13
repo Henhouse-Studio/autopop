@@ -82,13 +82,13 @@ if __name__ == "__main__":
         expand_with_syn=False,
         expand_with_openAI=True,
     )
-    prompt_embedding = compute_embedding(enriched_prompt)
+    # prompt_embedding = compute_embedding(enriched_prompt)
 
     # Get the dataframes from Notion
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
 
     # Score each table how similar it is to the prompt
-    df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding, enriched_prompt)
+    df_ranked, df_fact_ranked = score_dataframes(df_dict, enriched_prompt, OPENAI_TOKEN)
 
     dict_weights = get_relevant_columns(
         prompt, df_ranked, OPENAI_TOKEN, args, verbose=True

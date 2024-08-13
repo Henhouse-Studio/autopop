@@ -189,13 +189,13 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     return df_dict
 
 
-def score_dataframes(dfs_dict: dict, prompt_embedding: np.array, enriched_prompt: str):
+def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
     """
     Score each dataframe based on similarity to a prompt embedding.
 
     :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
-    :param prompt_embedding: A numpy array representing the embedding of the prompt (np.array).
     :param enriched_prompt: The enriched prompt text (str).
+    :param openai_token: The token to access ChatGPT (str).
     :return: A tuple containing the sorted and fact dataframes (dict, dict).
     """
     print("Scoring databases based on prompt...")
@@ -230,35 +230,22 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array, enriched_prompt
         sorted(df_fact_dict.items(), key=lambda x: x[1][0], reverse=True)
     )
 
-    # len_grouped_data = get_top_k(df_dict)
-    # len_fact_group = get_top_k(df_fact_dict)
-
-    # print(f"Selecting Top-{len_grouped_data} from:")
-
-    # # printing similarity score, name of df_ranked
-    # for i, (key, value) in enumerate(df_dict.items()):
-
-    #     print(f"[{i+1}]:", value[0], key)
-
-    # print(f"Selecting Top-{len_fact_group} Fact tables from:")
-
-    # # printing similarity score, name of df_ranked
-    # for i, (key, value) in enumerate(df_fact_dict.items()):
-
-    #     print(f"[{i+1}]:", value[0], key)
-
-    # # Get the top-k similar dataframes
-    # df_ranked = dict(list(df_dict.items())[:len_grouped_data])
-    # df_fact_ranked = dict(list(df_fact_dict.items())[:len_fact_group])
-
     # Names of the relevant tables based on prompt
-    relevant_tables = rerank_dataframes(enriched_prompt, df_dict, OPENAI_TOKEN)
-    relevant_fact_tables = rerank_dataframes(enriched_prompt, df_fact_dict, OPENAI_TOKEN)
+    relevant_tables = rerank_dataframes(enriched_prompt, df_dict, openai_token)
+    relevant_fact_tables = rerank_dataframes(
+        enriched_prompt, df_fact_dict, openai_token
+    )
 
     # Filter out the relevant tables from df_dict by the names
-    df_ranked = {table_name: value for table_name, value in df_dict.items() if table_name in relevant_tables}
+    df_ranked = {
+        table_name: value
+        for table_name, value in df_dict.items()
+        if table_name in relevant_tables
+    }
     df_fact_ranked = {
-        table_name: value for table_name, value in df_fact_dict.items() if table_name in relevant_fact_tables
+        table_name: value
+        for table_name, value in df_fact_dict.items()
+        if table_name in relevant_fact_tables
     }
 
     print(f"Selecting Top-{len(relevant_tables)} from:")
@@ -276,7 +263,6 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array, enriched_prompt
         print(f"[{i+1}]:", key)
 
     return df_ranked, df_fact_ranked
-
 
 
 def get_top_k(dfs_dict_ranked: dict):

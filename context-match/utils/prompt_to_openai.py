@@ -166,7 +166,7 @@ def rerank_dataframes(
         desc += items[2] + "\n"
 
         # count whether the desc as exceeded 24000 words
-        if len(desc) > 24000:
+        if len(desc) > 24_000:
             desc_batches.append(desc)
             desc = ""
 
@@ -184,8 +184,8 @@ def rerank_dataframes(
         response = sub("```python", "", response)
         response = sub("```", "", response)
         response_batches += response
-    
-    return response_batches
+
+    return json.loads(response_batches.replace("'", '"'))
 
 
 def get_relevant_columns(
