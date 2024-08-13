@@ -92,8 +92,10 @@ def save_data_pickle(
 ):
     with open(page_names_file, "wb") as f:
         pickle.dump(page_names, f)
+
     with open(page_table_links_file, "wb") as f:
         pickle.dump(page_table_links, f)
+
     print(f"Data saved to {page_names_file} and {page_table_links_file}")
 
 
@@ -102,8 +104,10 @@ def load_data_pickle(
 ):
     with open(page_names_file, "rb") as f:
         page_names = pickle.load(f)
+
     with open(page_table_links_file, "rb") as f:
         page_table_links = pickle.load(f)
+
     print(f"Data loaded from {page_names_file} and {page_table_links_file}")
     return page_names, page_table_links
 
@@ -114,6 +118,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
     :param notion_token: The Notion API token.
     :param database_id: The ID of the Notion database.
+    :param args: Argparser namespace containing the parameter 'fetch_tables'.
     :return: A dictionary with table names as keys and pandas DataFrames as values.
     """
     print("Retrieving databases...")
@@ -121,7 +126,11 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     page_names_file = "databases/table_of_tables/page_names.pkl"
     page_table_links_file = "databases/table_of_tables/page_table_links.pkl"
 
-    if os.path.exists(page_names_file) and os.path.exists(page_table_links_file):
+    if (
+        os.path.exists(page_names_file)
+        and os.path.exists(page_table_links_file)
+        and args.fetch_tables
+    ):
         # Load saved data
         page_names, page_table_links = load_data_pickle(
             page_names_file, page_table_links_file
@@ -155,7 +164,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
             if is_fact:
 
-                if os.path.isfile(path_table) and args.load_local_tables:
+                if os.path.isfile(path_table) and args.fetch_tables:
                     df = pd.read_csv(path_table)
 
                 else:
@@ -166,12 +175,12 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
                     df.to_csv(path_table, index=False)
 
             else:
-                if os.path.isfile(path_table) and args.load_local_tables:
+                if os.path.isfile(path_table) and args.fetch_tables:
                     df = pd.read_csv(path_table)
 
                 else:
                     df = get_table_notion(notion_token, temp)
-                    df.to_csv(path_table)
+                    df.to_csv(path_table, index=False)
 
             df_dict[table_name] = (is_fact, df)
 

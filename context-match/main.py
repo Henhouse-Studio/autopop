@@ -30,10 +30,9 @@ def config():
         help="Model to encode the text",
     )
     parser.add_argument(
-        "--load_local_tables",
-        default=True,
-        type=bool,
-        help="Load saved csv tables from local storage",
+        "--fetch_tables",
+        action="store_false",
+        help="Whether to fetch tables from Notion",
     )
     parser.add_argument(
         "--temperature",
@@ -41,6 +40,7 @@ def config():
         type=float,
         help="Controls randomness in API responses; 1.0 - more varied outputs",
     )
+
     return parser.parse_args()
 
 
@@ -89,7 +89,9 @@ if __name__ == "__main__":
     # Score each table how similar it is to the prompt
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
 
-    dict_weights = get_relevant_columns(prompt, df_ranked, OPENAI_TOKEN, args)
+    dict_weights = get_relevant_columns(
+        prompt, df_ranked, OPENAI_TOKEN, args, verbose=True
+    )
 
     # Enrich the dataframes with Fact tables
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
