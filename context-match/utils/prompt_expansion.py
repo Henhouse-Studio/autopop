@@ -73,11 +73,11 @@ def handle_prompt(
     :param print_prompt: Print the prompt (bool).
     :return: The enriched prompt (str).
     """
-    if expand_with_syn:
-        prompt = expand_prompt_with_synonyms(prompt)
-
     if expand_with_openAI:
         prompt = get_enriched_prompt(prompt, api_key=api_key)
+
+    if expand_with_syn:
+        prompt = expand_prompt_with_synonyms(prompt)
 
     if print_prompt:
         print(f"The input prompt is: \n{prompt}")
@@ -122,12 +122,16 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     """
     prompt = (
         original_prompt
-        + "\n\nBased on the prompt above, what columns should be present in the database? Return it as a Python list and nothing else."
+        + """\n\nBased on the prompt above, return 5 columns that should be present in the database
+        and keywords to help search for the relevant tables. 
+        Return everything as a Python list and nothing else."""
     )
 
     response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=max_tokens)
     response = sub("```python", "", response)
     response = sub("```", "", response).replace("'", '"')
+
+    print(response)
 
     # Check for empty response
     if not response:

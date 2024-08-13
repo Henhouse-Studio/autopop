@@ -70,15 +70,16 @@ if __name__ == "__main__":
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
     # Prompt from the user
-    prompt = "Get me a table of firms and their employees"
+    # prompt = "Get me a table of firms and their employees"
     # prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
+    prompt = "I want to find people who work for the government"
 
     # Enrichment of the prompt
     enriched_prompt = handle_prompt(
         prompt,
         api_key=OPENAI_TOKEN,
         print_prompt=True,
-        expand_with_syn=True,
+        expand_with_syn=False,
         expand_with_openAI=True,
     )
     prompt_embedding = compute_embedding(enriched_prompt)
@@ -94,6 +95,8 @@ if __name__ == "__main__":
 
     # Score each table how similar it is to the prompt
     df_ranked, df_fact_ranked = score_dataframes(df_dict, prompt_embedding)
+
+    df_reranked = rerank_dataframes(enriched_prompt, df_ranked, OPENAI_TOKEN)
 
     dict_weights = get_relevant_columns(
         prompt, df_ranked, OPENAI_TOKEN, args, verbose=True

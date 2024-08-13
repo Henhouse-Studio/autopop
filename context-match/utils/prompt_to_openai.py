@@ -1,3 +1,4 @@
+import sys
 import json
 import pprint
 import argparse
@@ -148,11 +149,11 @@ def get_names_columns(
     return response
 
 
-def rerank_similar_dataframes(
-    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 400
+def rerank_dataframes(
+    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
 ):
     """
-    Rerank the similar dataframes based on the prompt and description of the dataframes.
+    Rerank the similar dataframes based on the prompt and description of the dataframes using ChatGPT.
 
     :param prompt: The prompt to rerank the dataframes.
     :param df_ranked: A dictionary of dataframes ranked by similarity score.
@@ -165,13 +166,19 @@ def rerank_similar_dataframes(
 
     # print(desc)
     prompt = f"""Based on this prompt '{prompt}' and these table descriptions: {desc}.\n
-                 Rank the tables according to relevance in descending order.
-                 Get me the table names as a Python list and nothing else."""
+                 Select the most relevant tables and then sort them according to relevance in descending order.
+                 Get me the table names as a Python list and nothing else.
+                 If none of the tables are relevant, return an empty list."""
+
+    print(prompt)
+
     response = prompt_openai(prompt, api_key, max_tokens)
     response = sub("```python", "", response)
     response = sub("```", "", response)
 
-    # print(response)
+    print(response)
+
+    sys.exit()
 
     return
 

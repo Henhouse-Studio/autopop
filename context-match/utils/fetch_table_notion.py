@@ -203,8 +203,8 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
     for table_name, (is_fact, df) in dfs_dict.items():
 
         col_names = list(df.columns)
-        sample = df.sample(n=1, random_state=42)
-        desc = f"The name of the table is {table_name}. It has these columns: {col_names}. This is a extract from the table:\n"
+        sample = df.sample(n=2, random_state=42)
+        desc = f"The name of the table is {table_name}. This is a extract from the table:\n"
 
         for sample_value in range(len(sample)):
             for col_name in col_names:
@@ -217,10 +217,11 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
 
         if is_fact:
             df_fact_dict[table_name] = (similarity_score, df, desc)
+
         else:
             df_dict[table_name] = (similarity_score, df, desc)
 
-    # sorting the dictionary based on similarity score
+    # Sorting the dictionary based on similarity score
     df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
     df_fact_dict = dict(
         sorted(df_fact_dict.items(), key=lambda x: x[1][0], reverse=True)
@@ -233,12 +234,14 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_dict.items()):
+
         print(f"[{i+1}]:", value[0], key)
 
     print(f"Selecting Top-{len_fact_group} Fact tables from:")
 
     # printing similarity score, name of df_ranked
     for i, (key, value) in enumerate(df_fact_dict.items()):
+
         print(f"[{i+1}]:", value[0], key)
 
     # Get the top-k similar dataframes
@@ -246,6 +249,7 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
     df_fact_ranked = dict(list(df_fact_dict.items())[:len_fact_group])
 
     return df_ranked, df_fact_ranked
+    return df_dict, df_fact_dict
 
 
 def get_top_k(dfs_dict_ranked: dict):
