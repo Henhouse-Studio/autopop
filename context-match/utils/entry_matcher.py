@@ -162,51 +162,6 @@ def combine_dfs(
     # Filter the scores by group
     scores_f = filter_row_matches(scores)
 
-    ## Method 1
-    
-    # Identifying matched indices
-    matched_base_indices = [i for i, _ in scores_f.keys()]
-    matched_populate_indices = [j for _, j in scores_f.keys()]
-
-    # Creating DataFrames for matched rows
-    matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
-    matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
-
-    # Identify overlapping columns
-    overlapping_columns = matched_base.columns.intersection(matched_populate.columns)
-
-    # For overlapping columns, prioritize non-null values
-    for col in overlapping_columns:
-        matched_base[col] = matched_base[col].combine_first(matched_populate[col])
-        matched_populate.drop(columns=[col], inplace=True)
-
-    # Merging the matched DataFrames side by side
-    matched_df = pd.concat([matched_base, matched_populate], axis=1)
-
-    # Add the confidence values
-    matched_df['conf_values'] = list(scores_f.values())
-
-    # Filtering based on confidence threshold
-    threshold = (1 - tolerance) * pd.Series(list(scores_f.values())).quantile(0.25)
-    matched_df = matched_df[matched_df['conf_values'] >= threshold]
-
-    # Identifying unmatched rows
-    unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)].reset_index(drop=True)
-    unmatched_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)].reset_index(drop=True)
-
-    # Add NaN for missing data in unmatched rows
-    unmatched_base = unmatched_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_base.columns})
-    unmatched_populate = unmatched_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_populate.columns})
-
-    # Adding confidence values for unmatched rows
-    unmatched_base['conf_values'] = 0
-    unmatched_populate['conf_values'] = 0
-
-    # Combine matched and unmatched DataFrames
-    final_df = pd.concat([matched_df, unmatched_base, unmatched_populate], ignore_index=True)
-
-    ## Method 2
-
     matched_base_indices = [i for i, _ in scores_f.keys()]
     matched_populate_indices = [j for _, j in scores_f.keys()]
 
@@ -236,7 +191,6 @@ def combine_dfs(
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df['conf_values'].fillna(0, inplace=True)
     final_df.to_csv("merged.csv", index=False)
-
 
     sys.exit()
 
