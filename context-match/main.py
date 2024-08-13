@@ -24,6 +24,12 @@ def config():
         help="Threshold required to merge two DataFrames",
     )
     parser.add_argument(
+        "--tolerance",
+        default=0.15,
+        type=float,
+        help="Controls when two rows are allowed to match",
+    )
+    parser.add_argument(
         "--model_encoder",
         default="all-MiniLM-L6-v2",
         type=str,

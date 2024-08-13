@@ -303,7 +303,7 @@ def merge_top_k(
         df_populate = df_ranked[table_name]
         pop_weights = dict_weights[table_name]
         df_combined, new_weights = combine_dfs(
-            df_base, df_populate, base_weights, pop_weights
+            df_base, df_populate, base_weights, pop_weights, tolerance=args.tolerance
         )
 
         # pprint.pprint(new_weights)
