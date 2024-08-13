@@ -131,8 +131,6 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     response = sub("```python", "", response)
     response = sub("```", "", response).replace("'", '"')
 
-    print(response)
-
     # Check for empty response
     if not response:
         raise ValueError("Received empty response from API")

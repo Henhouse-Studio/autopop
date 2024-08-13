@@ -7,6 +7,7 @@ from rapidfuzz import fuzz
 from notion_client import Client
 from utils.make_embeddings import *
 from utils.compute_similarity import *
+from utils.prompt_to_openai import *
 
 
 def get_table_notion(NOTION_TOKEN, DATABASE_URL):
@@ -188,12 +189,13 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     return df_dict
 
 
-def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
+def score_dataframes(dfs_dict: dict, prompt_embedding: np.array, enriched_prompt: str):
     """
     Score each dataframe based on similarity to a prompt embedding.
 
     :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
     :param prompt_embedding: A numpy array representing the embedding of the prompt (np.array).
+    :param enriched_prompt: The enriched prompt text (str).
     :return: A tuple containing the sorted and fact dataframes (dict, dict).
     """
     print("Scoring databases based on prompt...")
@@ -210,10 +212,11 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
             for col_name in col_names:
                 desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
 
-        # print(desc)
-        field_embeddings = compute_embedding(desc)
-        similarity_score = compute_similarity(prompt_embedding, field_embeddings)
-        similarity_score = round(similarity_score * 100, 2)
+        # # print(desc)
+        # field_embeddings = compute_embedding(desc)
+        # similarity_score = compute_similarity(prompt_embedding, field_embeddings)
+        # similarity_score = round(similarity_score * 100, 2)
+        similarity_score = 0
 
         if is_fact:
             df_fact_dict[table_name] = (similarity_score, df, desc)
@@ -227,29 +230,53 @@ def score_dataframes(dfs_dict: dict, prompt_embedding: np.array):
         sorted(df_fact_dict.items(), key=lambda x: x[1][0], reverse=True)
     )
 
-    len_grouped_data = get_top_k(df_dict)
-    len_fact_group = get_top_k(df_fact_dict)
+    # len_grouped_data = get_top_k(df_dict)
+    # len_fact_group = get_top_k(df_fact_dict)
 
-    print(f"Selecting Top-{len_grouped_data} from:")
+    # print(f"Selecting Top-{len_grouped_data} from:")
+
+    # # printing similarity score, name of df_ranked
+    # for i, (key, value) in enumerate(df_dict.items()):
+
+    #     print(f"[{i+1}]:", value[0], key)
+
+    # print(f"Selecting Top-{len_fact_group} Fact tables from:")
+
+    # # printing similarity score, name of df_ranked
+    # for i, (key, value) in enumerate(df_fact_dict.items()):
+
+    #     print(f"[{i+1}]:", value[0], key)
+
+    # # Get the top-k similar dataframes
+    # df_ranked = dict(list(df_dict.items())[:len_grouped_data])
+    # df_fact_ranked = dict(list(df_fact_dict.items())[:len_fact_group])
+
+    # Names of the relevant tables based on prompt
+    relevant_tables = rerank_dataframes(enriched_prompt, df_dict, OPENAI_TOKEN)
+    relevant_fact_tables = rerank_dataframes(enriched_prompt, df_fact_dict, OPENAI_TOKEN)
+
+    # Filter out the relevant tables from df_dict by the names
+    df_ranked = {table_name: value for table_name, value in df_dict.items() if table_name in relevant_tables}
+    df_fact_ranked = {
+        table_name: value for table_name, value in df_fact_dict.items() if table_name in relevant_fact_tables
+    }
+
+    print(f"Selecting Top-{len(relevant_tables)} from:")
 
     # printing similarity score, name of df_ranked
-    for i, (key, value) in enumerate(df_dict.items()):
+    for i, (key, _) in enumerate(df_dict.items()):
 
-        print(f"[{i+1}]:", value[0], key)
+        print(f"[{i+1}]:", key)
 
-    print(f"Selecting Top-{len_fact_group} Fact tables from:")
+    print(f"Selecting Top-{len(relevant_fact_tables)} Fact tables from:")
 
     # printing similarity score, name of df_ranked
-    for i, (key, value) in enumerate(df_fact_dict.items()):
+    for i, (key, _) in enumerate(df_fact_dict.items()):
 
-        print(f"[{i+1}]:", value[0], key)
-
-    # Get the top-k similar dataframes
-    df_ranked = dict(list(df_dict.items())[:len_grouped_data])
-    df_fact_ranked = dict(list(df_fact_dict.items())[:len_fact_group])
+        print(f"[{i+1}]:", key)
 
     return df_ranked, df_fact_ranked
-    return df_dict, df_fact_dict
+
 
 
 def get_top_k(dfs_dict_ranked: dict):

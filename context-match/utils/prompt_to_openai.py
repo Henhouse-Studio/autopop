@@ -150,7 +150,7 @@ def get_names_columns(
 
 
 def rerank_dataframes(
-    prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
+    original_prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
 ):
     """
     Rerank the similar dataframes based on the prompt and description of the dataframes using ChatGPT.
@@ -159,28 +159,33 @@ def rerank_dataframes(
     :param df_ranked: A dictionary of dataframes ranked by similarity score.
     :return: The reranked dataframes.
     """
+    desc_batches = []
     desc = ""
     # Iterate through the dictionary
     for _, items in df_ranked.items():
         desc += items[2] + "\n"
 
-    # print(desc)
-    prompt = f"""Based on this prompt '{prompt}' and these table descriptions: {desc}.\n
-                 Select the most relevant tables and then sort them according to relevance in descending order.
-                 Get me the table names as a Python list and nothing else.
-                 If none of the tables are relevant, return an empty list."""
+        # count whether the desc as exceeded 24000 words
+        if len(desc) > 24000:
+            desc_batches.append(desc)
+            desc = ""
 
-    print(prompt)
+    response_batches = ""
+    # The desc was never more than 2400 words so just append to desc_batches
+    if desc_batches == []:
+        desc_batches.append(desc)
 
-    response = prompt_openai(prompt, api_key, max_tokens)
-    response = sub("```python", "", response)
-    response = sub("```", "", response)
-
-    print(response)
-
-    sys.exit()
-
-    return
+    for desc in desc_batches:
+        prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc}.\n
+                    Select the most relevant tables and then sort them according to relevance in descending order.
+                    Get me the table names as a Python list and nothing else.
+                    If none of the tables are relevant, return an empty list."""
+        response = prompt_openai(prompt, api_key, max_tokens)
+        response = sub("```python", "", response)
+        response = sub("```", "", response)
+        response_batches += response
+    
+    return response_batches
 
 
 def get_relevant_columns(
