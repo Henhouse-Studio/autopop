@@ -18,7 +18,7 @@ def config():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--threshold", default=0.7, type=float, help="Threshold for detecting matches"
+        "--threshold", default=0.5, type=float, help="Threshold for detecting matches"
     )
     parser.add_argument(
         "--model_encoder",
