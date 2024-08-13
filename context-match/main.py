@@ -3,14 +3,14 @@ import json
 import argparse
 
 # from utils.fuzzy_matcher import *
-from utils.verbosity import *
-from utils.entry_matcher import *
 from utils.make_embeddings import *
 from utils.prompt_expansion import *
-from utils.prompt_to_openai import *
-from utils.seed_initializer import *
 from utils.fetch_table_notion import *
 from utils.compute_similarity import *
+from utils.entry_matcher import *
+from utils.prompt_to_openai import *
+from utils.verbosity import *
+from utils.seed_initializer import *
 
 
 # Argparser:

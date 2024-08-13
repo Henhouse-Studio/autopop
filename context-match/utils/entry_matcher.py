@@ -191,6 +191,9 @@ def combine_dfs(
     matched_base_indices = [i for i, _ in scores_f.keys()]
     matched_populate_indices = [j for _, j in scores_f.keys()]
 
+    print("matched_base_indices", matched_base_indices )
+    print("matched_populate_indices", matched_populate_indices )
+
     # Extract the corresponding matching rows from each DataFrame using the index pairs
     matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
     matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
