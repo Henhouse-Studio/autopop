@@ -18,10 +18,10 @@ def config():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--matching_threshold", 
-        default=0.7, 
-        type=float, 
-        help="Threshold required to merge two DataFrames"
+        "--matching_threshold",
+        default=0.5,
+        type=float,
+        help="Threshold required to merge two DataFrames",
     )
     parser.add_argument(
         "--model_encoder",
