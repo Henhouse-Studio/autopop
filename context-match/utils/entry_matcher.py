@@ -185,14 +185,10 @@ def combine_dfs(
 
     # Filter the scores by group
     scores_f = filter_row_matches(scores)
-
     # pprint.pprint(scores_f)
 
     matched_base_indices = [i for i, _ in scores_f.keys()]
     matched_populate_indices = [j for _, j in scores_f.keys()]
-
-    print("matched_base_indices", matched_base_indices )
-    print("matched_populate_indices", matched_populate_indices )
 
     # Extract the corresponding matching rows from each DataFrame using the index pairs
     matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
@@ -212,6 +208,11 @@ def combine_dfs(
     # Filter by confidence threshold
     threshold = (1 - tolerance) * 0.5
     matched_df = matched_df[matched_df["conf_values"] >= threshold]
+
+    # Filter the scores based on the threshold
+    filtered_scores_f = {k: v for k, v in scores_f.items() if v >= threshold}
+    matched_base_indices = [i for i, _ in filtered_scores_f.keys()]
+    matched_populate_indices = [j for _, j in filtered_scores_f.keys()]
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
@@ -244,9 +245,9 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    # final_df.to_csv("merged.csv", index=False)
+    final_df.to_csv("merged.csv", index=False)
 
-    # sys.exit()
+    sys.exit()
 
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
