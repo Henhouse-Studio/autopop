@@ -75,8 +75,6 @@ def group_scores_with_indices(scores_dict: dict, std_factor: int = 1):
 
         grouped_scores[row] = groups
 
-    pprint.pprint(grouped_scores)
-
     return grouped_scores
 
 
@@ -152,7 +150,7 @@ def combine_dfs(
     df_populate: pd.DataFrame,
     base_weights: dict,
     pop_weights: dict,
-    tolerance: float = 0.15,
+    tolerance: float = 0.05,
 ):
     """
     Combining the rows of two dataframes based on similarity scores using merge.
@@ -188,6 +186,8 @@ def combine_dfs(
     # Filter the scores by group
     scores_f = filter_row_matches(scores)
 
+    # pprint.pprint(scores_f)
+
     matched_base_indices = [i for i, _ in scores_f.keys()]
     matched_populate_indices = [j for _, j in scores_f.keys()]
 
@@ -204,13 +204,15 @@ def combine_dfs(
         axis=1,
     )
     matched_df["conf_values"] = list(scores_f.values())
+    # matched_df.to_csv("test.csv", index=False)
 
     # Filter by confidence threshold
-    threshold = (1 - tolerance) * matched_df["conf_values"].quantile(0.25)
+    threshold = (1 - tolerance) * 0.5
     matched_df = matched_df[matched_df["conf_values"] >= threshold]
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
+    unmatched_base.to_csv("unmatched.csv")
     unmatched_populate = df_populate.loc[
         ~df_populate.index.isin(matched_populate_indices)
     ]
@@ -239,9 +241,9 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    final_df.to_csv("merged.csv", index=False)
+    # final_df.to_csv("merged.csv", index=False)
 
-    sys.exit()
+    # sys.exit()
 
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
@@ -309,7 +311,10 @@ def merge_top_k(
         # pprint.pprint(new_weights)
         # df_combined.to_csv("combined.csv")
 
-        if df_combined.loc[:, "conf_values"].mean() > args.matching_threshold:
+        if (
+            df_combined[df_combined["conf_values"] != 0].mean()
+            > args.matching_threshold
+        ):
             df_base = df_combined
             base_weights = new_weights
 

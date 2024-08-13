@@ -25,7 +25,7 @@ def config():
     )
     parser.add_argument(
         "--tolerance",
-        default=0.15,
+        default=0.05,
         type=float,
         help="Controls when two rows are allowed to match",
     )
