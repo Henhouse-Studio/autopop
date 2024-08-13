@@ -18,7 +18,10 @@ def config():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--threshold", default=0.7, type=float, help="Threshold for detecting matches"
+        "--matching_threshold", 
+        default=0.7, 
+        type=float, 
+        help="Threshold required to merge two DataFrames"
     )
     parser.add_argument(
         "--model_encoder",
@@ -36,7 +39,7 @@ def config():
         "--temperature",
         default=0.0,
         type=float,
-        help="Temperature (randomness) for the OpenAI API",
+        help="Controls randomness in API responses; 1.0 - more varied outputs",
     )
     return parser.parse_args()
 

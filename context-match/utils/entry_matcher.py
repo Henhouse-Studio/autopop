@@ -255,7 +255,7 @@ def merge_top_k(
         # print(df_combined)
         # df_combined.to_csv("combined.csv")
 
-        if df_combined.loc[:, "conf_values"].mean() > args.threshold:
+        if df_combined.loc[:, "conf_values"].mean() > args.matching_threshold:
             df_base = df_combined
 
     # Remove columns which are the same
