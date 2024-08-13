@@ -35,7 +35,6 @@ def df_reweighting(df: pd.DataFrame, weights: dict):
     return df_reweighted
 
 
-
 def group_scores_with_indices(scores_dict: dict, std_factor: int = 1):
     """
     Groups scores for each entry based on standard deviation while preserving indices.
@@ -64,7 +63,10 @@ def group_scores_with_indices(scores_dict: dict, std_factor: int = 1):
         groups = [current_group]
 
         for i in range(1, len(score_tuples)):
-            if abs(score_tuples[i][1] - np.mean([x[1] for x in current_group])) <= std_dev * std_factor:
+            if (
+                abs(score_tuples[i][1] - np.mean([x[1] for x in current_group]))
+                <= std_dev * std_factor
+            ):
                 current_group.append(score_tuples[i])
             else:
                 current_group = [score_tuples[i]]
@@ -75,6 +77,7 @@ def group_scores_with_indices(scores_dict: dict, std_factor: int = 1):
     pprint.pprint(grouped_scores)
 
     return grouped_scores
+
 
 def filter_row_matches(scores_dict: dict, std_factor: int = 1):
     """
@@ -141,7 +144,7 @@ def combine_dfs(
     :return: The merged dataframe (pd.DataFrame).
 
     * Note on pd.update:
-        - If matched_base has a NaN value in the Location column, and matched_populate has a 
+        - If matched_base has a NaN value in the Location column, and matched_populate has a
           corresponding non-NaN value, matched_base will be updated with the value from matched_populate.
         - If matched_base already has a non-NaN value, it will not be overwritten because overwrite=False.
 
@@ -170,29 +173,52 @@ def combine_dfs(
     matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
 
     # Combine matched DataFrames side by side and add confidence values
-    matched_df = pd.concat([matched_base, matched_populate.drop(columns=matched_base.columns, errors='ignore')], axis=1)
-    matched_df['conf_values'] = list(scores_f.values())
+    matched_df = pd.concat(
+        [
+            matched_base,
+            matched_populate.drop(columns=matched_base.columns, errors="ignore"),
+        ],
+        axis=1,
+    )
+    matched_df["conf_values"] = list(scores_f.values())
 
     # Filter by confidence threshold
-    threshold = (1 - tolerance) * matched_df['conf_values'].quantile(0.25)
-    matched_df = matched_df[matched_df['conf_values'] >= threshold]
+    threshold = (1 - tolerance) * matched_df["conf_values"].quantile(0.25)
+    matched_df = matched_df[matched_df["conf_values"] >= threshold]
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
-    unmatched_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)]
+    unmatched_populate = df_populate.loc[
+        ~df_populate.index.isin(matched_populate_indices)
+    ]
 
     # Append unmatched rows with NaN filled columns
-    final_df = pd.concat([
-        matched_df,
-        unmatched_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_base.columns}),
-        unmatched_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_populate.columns})
-    ], ignore_index=True)
+    final_df = pd.concat(
+        [
+            matched_df,
+            unmatched_base.assign(
+                **{
+                    col: None
+                    for col in df_populate.columns
+                    if col not in unmatched_base.columns
+                }
+            ),
+            unmatched_populate.assign(
+                **{
+                    col: None
+                    for col in df_base.columns
+                    if col not in unmatched_populate.columns
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
-    final_df['conf_values'].fillna(0, inplace=True)
+    final_df["conf_values"].fillna(0, inplace=True)
     final_df.to_csv("merged.csv", index=False)
 
-    sys.exit()
+    # sys.exit()
 
     return final_df
 
