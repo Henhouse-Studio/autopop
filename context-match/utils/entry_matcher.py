@@ -216,7 +216,6 @@ def combine_dfs(
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
-    unmatched_base.to_csv("unmatched.csv")
     unmatched_populate = df_populate.loc[
         ~df_populate.index.isin(matched_populate_indices)
     ]
@@ -245,9 +244,7 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    final_df.to_csv("merged.csv", index=False)
-
-    sys.exit()
+    # final_df.to_csv("merged.csv", index=False)
 
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
