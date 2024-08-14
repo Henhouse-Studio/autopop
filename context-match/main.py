@@ -62,19 +62,19 @@ if __name__ == "__main__":
     # Get the argparse arguments
     args = config()
 
-    # Get keys from json key holder
+    # Get the required keys from the JSON file
     with open("keys.json") as f:
         dic_keys = json.load(f)
         NOTION_TOKEN = dic_keys["notion_token"]
         DATABASE_ID = dic_keys["database_id"]
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
-    # Prompt from the user
+    # The user prompt
     # prompt = "Get me a table of firms and their employees"
     prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
     # prompt = "I want to find people who work for the government"
 
-    # Enrichment of the prompt
+    # Prompt enrichment for refined search
     enriched_prompt = handle_prompt(
         prompt,
         api_key=OPENAI_TOKEN,
@@ -99,6 +99,6 @@ if __name__ == "__main__":
 
     # Merge the enriched dataframes
     final_df = merge_top_k(df_enriched, dict_weights, OPENAI_TOKEN, args)
-    final_df.to_csv("final.csv")
+    final_df.to_csv("final.csv", index=False)
 
     print("Dataset exported!")

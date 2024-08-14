@@ -186,6 +186,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
             df_dict[table_name] = (is_fact, df)
 
     print(f"Number of databases found: {len(df_dict)}\n")
+
     return df_dict
 
 
@@ -210,6 +211,7 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
 
         for sample_value in range(len(sample)):
             for col_name in col_names:
+
                 desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
 
         # # print(desc)
@@ -265,6 +267,7 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
     return df_ranked, df_fact_ranked
 
 
+# Currently Unused
 def get_top_k(dfs_dict_ranked: dict):
     """
     Get the top-k similar dataframes based on the similarity scores.
@@ -291,6 +294,7 @@ def get_top_k(dfs_dict_ranked: dict):
     return top_k
 
 
+# Currently Unused
 def score_fields(dfs_dict: dict, prompt_embedding: np.array):
     """
     Score each dataframe based on similarity to a prompt embedding.
@@ -316,6 +320,7 @@ def score_fields(dfs_dict: dict, prompt_embedding: np.array):
     return dfs_dict
 
 
+# Currently Unused
 def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
     """
     Remove duplicate columns from a dataframe based on similarity threshold.

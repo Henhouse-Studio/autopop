@@ -1,10 +1,8 @@
 import sys
 import pprint
-import argparse
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from scipy.special import softmax
 from utils.make_embeddings import *
 from sentence_transformers import util
 from scipy.spatial.distance import cdist
@@ -169,6 +167,7 @@ def compute_similarity_entries_row(
     return converted_scores
 
 
+# Unused
 def compute_similarity_entries_col(df_base: pd.DataFrame, df_populate: pd.DataFrame):
     """
     Compute the similarity scores between the rows of two dataframes.
@@ -221,6 +220,7 @@ def compute_similarity_entries_col(df_base: pd.DataFrame, df_populate: pd.DataFr
     return converted_scores, most_similar_cols
 
 
+# Unused
 def compute_similar_columns(df1: pd.DataFrame, df2: pd.DataFrame):
 
     print(

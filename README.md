@@ -1,18 +1,43 @@
-# **Autopop**
+# **AutoPop**
 
-This repo is adapted from:
-[https://github.com/hustvl/Vim](https://github.com/hustvl/Vim)
+This repository is a chat-based database merging/retrieval system.
 
-How to install:
+## **Setup**
 
-[https://www.a2p.it/machine-learning/pretrained-vision-mamba-minimal-example/](https://www.a2p.it/machine-learning/pretrained-vision-mamba-minimal-example/)
+To run this code, first do the following:
 
-_Note:_ CUDA is needed to run Vim. Make sure that the CUDA versions for both cudatoolkit and torch match!
+```
 
-How to run:
+git clone gregorygo12/autopop
 
-```sh
+```
 
-python vim/example.py
+Afterwards, you need to install the dependencies:
+
+```
+
+# For the context-matcher
+cd context-match
+conda env create -f environment.yml
+
+# For the image-matcher
+cd image-match
+conda env create -f environment.yml
+
+```
+
+## **Running**
+
+For running the code, just do the following:
+
+```
+
+# For the context-matcher
+cd context-match
+python main.py
+
+# For the image-matcher
+cd image-match
+python main.py
 
 ```

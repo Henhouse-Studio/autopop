@@ -7,22 +7,42 @@ from re import sub
 from openai import OpenAI
 
 
-def prompt_openai(
-    prompt: str, api_key: str, max_tokens: int = 50, temperature: float = 0.0
-) -> str:
+def clean_output(response: str):
     """
-    Send a prompt to the OpenAI API and get a response.
+    Function to clean the GPT Python code output.
+
+    :param response: The text response from the OpenAI API.
+    :return: The cleaned response (str).
+    """
+
+    new_response = sub("```python", "", response)
+    new_response = sub("```", "", new_response)
+    new_response = new_response.replace("'", '"')
+
+    return new_response
+
+
+def prompt_openai(
+    prompt: str,
+    api_key: str,
+    max_tokens: int = 50,
+    temperature: float = 0.0,
+    model: str = "gpt-4o-mini",
+):
+    """
+    Function to send a prompt to the OpenAI API and get a response.
 
     :param prompt: The text prompt to send to the OpenAI API.
     :param api_key: The OpenAI API key for authentication.
     :param temperature: The randomness of the response (default is 0.0).
     :param max_tokens: The maximum number of tokens in the response.
-    :return: The response text from the OpenAI API.
+    :param model: The OpenAI model to use.
+    :return: The response text from the OpenAI API (str).
     """
 
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=model,
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt},
@@ -32,34 +52,6 @@ def prompt_openai(
     )
 
     return response.choices[0].message.content.strip()
-
-
-def get_facts(
-    df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int = 50
-) -> str:
-    """
-    Generate a list of additional fact column names based on the provided dataframe.
-
-    :param df: The pandas DataFrame containing the data.
-    :param api_key: The OpenAI API key for authentication.
-    :param n_facts: The number of fact columns to generate.
-    :param max_tokens: The maximum number of tokens in the response.
-    :return: A string representing a list of suggested fact column names.
-    """
-    assert 0 < n_facts < 12, "Please request between 1 and 11 facts."
-
-    fact_get_prompt = f"""This is my data: 
-    
-    {df.head().to_string()}
-    
-    Based on this, come up with {n_facts} column names for additional facts about the data above. 
-    Return it as a Python list and nothing else."""
-
-    response = prompt_openai(fact_get_prompt, api_key, max_tokens)
-    fact_response = sub("```python", "", response)
-    fact_response = sub("```", "", fact_response)
-
-    return fact_response
 
 
 def augment_column_names(
@@ -86,10 +78,8 @@ def augment_column_names(
     )
 
     response = prompt_openai(prompt_augmented, api_key, max_tokens)
-    response = sub("```python", "", response)
-    response = sub("```", "", response)
 
-    return response
+    return clean_output(response)
 
 
 def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 200):
@@ -112,12 +102,7 @@ def rename_columns(df: pd.DataFrame, api_key: str, max_tokens: int = 200):
     Provide this in a python list (use double quotation marks for each entry) and nothing else."""
 
     response = prompt_openai(prompt, api_key, max_tokens)
-    response = sub("```python", "", response)
-    response = sub("```", "", response)
-
-    # print(response)
-
-    df.columns = json.loads(response)
+    df.columns = json.loads(clean_output(response))
 
     return df
 
@@ -143,8 +128,7 @@ def get_names_columns(
     )
 
     response = prompt_openai(prompt_augmented, api_key, max_tokens)
-    response = sub("```python", "", response)
-    response = sub("```", "", response)
+    response = clean_output(response)
 
     return response
 
@@ -161,6 +145,7 @@ def rerank_dataframes(
     """
     desc_batches = []
     desc = ""
+
     # Iterate through the dictionary
     for _, items in df_ranked.items():
         desc += items[2] + "\n"
@@ -171,7 +156,7 @@ def rerank_dataframes(
             desc = ""
 
     response_batches = ""
-    # The desc was never more than 2400 words so just append to desc_batches
+    # The desc should never be more than 2400 words so just append to desc_batches
     if desc_batches == []:
         desc_batches.append(desc)
 
@@ -181,11 +166,10 @@ def rerank_dataframes(
                     Get me the table names as a Python list and nothing else.
                     If none of the tables are relevant, return an empty list."""
         response = prompt_openai(prompt, api_key, max_tokens)
-        response = sub("```python", "", response)
-        response = sub("```", "", response)
+        response = clean_output(response)
         response_batches += response
 
-    return json.loads(response_batches.replace("'", '"'))
+    return json.loads(response_batches)
 
 
 def get_relevant_columns(
@@ -197,7 +181,7 @@ def get_relevant_columns(
     verbose: bool = False,
 ):
     """
-    Get the relevant columns from the dataframes based on the prompt.
+    Get and weight the relevant columns from the dataframes based on the prompt.
 
     :param prompt: The prompt to get the relevant columns.
     :param df_ranked: A dictionary of dataframes ranked by similarity score.
@@ -211,26 +195,13 @@ def get_relevant_columns(
     dict_weights = {}
     for table_name, (_, _, desc) in df_ranked.items():
 
-        # prompt = f"""Based on this prompt:\n{prompt}\n
-        #              Get me the relevant columns from this table.
-        #              The description of the table is: {desc}
-        #              This is an extract from the table: {df.head().to_string()}
-        #              Only provide me the names of the columns not the actual data.
-        #              Return it as a Python list and nothing else."""
-
-        # prompt = f"""Based on this prompt:\n
-        #              {prompt}\n
-        #              I want you to analyse this dataframe and tell me for each column (field) how relevant is to the prompt. Get me only the relevant fields for instance if my prompt is: "Get me a table of cats" and the columns are "[Name, Age, ]". For the analyzing part take a look into the actual data (the entries) to get a score for the weights.
-        #             Here is as extract from the dataframe:
-        #             {desc}
-        #             Return it as a Python list and nothing else."""
-
         prompt = f"""Based on this prompt:\n
                     {prompt}\n
                     Analyze the below dataframe and select the most relevant column names based on the above prompt.
                     {desc}
                     Return only the relevant column names as a python dictionary (outside of a variable), with the key being the
                     column name, and the value being the importance score of said column with respect to the prompt.
+                    Ensure that you only return column names that are present in the above dataframe.
                     Ensure the importance scores are all integers (ranging from 1-10, with 10 being the highest score) 
                     and only return the dictionary.
                     """
@@ -239,15 +210,40 @@ def get_relevant_columns(
             prompt, api_key, max_tokens=max_tokens, temperature=args.temperature
         )
 
-        response = sub("```python", "", response)
-        response = sub("```", "", response)
+        dict_weights[table_name] = json.loads(clean_output(response))
 
-        dict_weights[table_name] = json.loads(response.replace("'", '"'))
-
+    # For printing
     if verbose:
         pprint.pprint(dict_weights)
 
     return dict_weights
+
+
+# Unused
+def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int = 50):
+    """
+    Generate a list of additional fact column names based on the provided dataframe.
+
+    :param df: The pandas DataFrame containing the data.
+    :param api_key: The OpenAI API key for authentication.
+    :param n_facts: The number of fact columns to generate.
+    :param max_tokens: The maximum number of tokens in the response.
+    :return: A string representing a list of suggested fact column names.
+    """
+    assert 0 < n_facts < 12, "Please request between 1 and 11 facts."
+
+    fact_get_prompt = f"""This is my data: 
+    
+    {df.head().to_string()}
+    
+    Based on this, come up with {n_facts} column names for additional facts about the data above. 
+    Return it as a Python list and nothing else."""
+
+    response = prompt_openai(fact_get_prompt, api_key, max_tokens)
+    fact_response = sub("```python", "", response)
+    fact_response = sub("```", "", fact_response)
+
+    return fact_response
 
 
 if __name__ == "__main__":

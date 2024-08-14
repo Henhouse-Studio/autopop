@@ -9,13 +9,17 @@ from utils.prompt_to_openai import *
 
 # Function to get NLTK data directory based on the operating system
 def get_nltk_data_dir():
+
     system = platform.system()
     if system == "Windows":
         nltk_data_dir = os.path.join(os.environ["APPDATA"], "nltk_data")
+
     elif system == "Darwin":  # macOS
         nltk_data_dir = os.path.expanduser("~/Library/Application Support/nltk_data")
+
     else:  # Linux and other OS
         nltk_data_dir = os.path.expanduser("~/nltk_data")
+
     return nltk_data_dir
 
 
@@ -43,9 +47,14 @@ except LookupError:
     nltk.download("punkt", download_dir=nltk_data_dir, quiet=True)
 
 
-# Function to get synonyms for a given word
 def get_synonyms(word, max_synonyms=3):
+    """
+    Function to get synonyms for a given word using NLTK
 
+    :param word: The word to find synonyms for (str).
+    :param max_synonyms: The number of synonyms to return (int).
+    :return: The set of synonyms (set).
+    """
     synonyms = set()
     for syn in wordnet.synsets(word):
         for lemma in syn.lemmas():
