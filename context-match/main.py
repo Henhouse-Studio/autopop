@@ -9,7 +9,7 @@ from utils.fetch_table_notion import *
 from utils.compute_similarity import *
 from utils.entry_matcher import *
 from utils.prompt_to_openai import *
-from utils.verbosity import *
+from utils.supress_warnings import *
 from utils.seed_initializer import *
 
 
@@ -25,7 +25,7 @@ def config():
     )
     parser.add_argument(
         "--tolerance",
-        default=0.1,
+        default=0.15,
         type=float,
         help="Controls when two rows are allowed to match",
     )
@@ -73,10 +73,11 @@ if __name__ == "__main__":
     # prompt = "Get me a table of firms and their employees"
     # prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
     # prompt = "I want to find people who work for the government"
+    prompt = "Get me a table of blogpost authors and their companies"
     # prompt = "Get me tables that contain people and their companies"
     # prompt = "Get me a table that contains people"
     # prompt = "Get me a table that contains only companies "
-    prompt = "Get me a table that contains only skills of people"
+    # prompt = "Get me a table that contains only skills of people"
 
     # Prompt enrichment for refined search
     enriched_prompt = handle_prompt(
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
 
     # Merge the enriched dataframes
-    final_df = merge_top_k(df_enriched, dict_weights, OPENAI_TOKEN, args)
+    final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
     final_df.to_csv("final.csv", index=False)
 
     print("Dataset exported!")

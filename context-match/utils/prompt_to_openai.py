@@ -174,7 +174,7 @@ def rerank_dataframes(
 
 
 def get_relevant_columns(
-    prompt: str,
+    original_prompt: str,
     df_ranked: dict,
     api_key: str,
     args: argparse.Namespace = None,
@@ -197,7 +197,7 @@ def get_relevant_columns(
     for table_name, (_, _, desc) in df_ranked.items():
 
         prompt = f"""Based on this prompt:\n
-                    {prompt}\n
+                    {original_prompt}\n
                     Analyze the below dataframe and select the most relevant column names based on the above prompt.
                     {desc}
                     Return only the relevant column names as a python dictionary (outside of a variable), with the key being the
@@ -247,16 +247,106 @@ def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int 
     return fact_response
 
 
+def get_column_names(prompt: str, desc: str, api_key: str, 
+                     max_tokens: int = 200, verbose: bool = False
+):
+    """
+    Get columns that represent names.
+
+    :param desc: The description of the data.
+    :param api_key: The OpenAI API key for authentication.
+    :param max_tokens: The maximum number of tokens in the response.
+    :param verbose: Whether to print the reponse (bool, default = False).
+    :return: A list of possible column that represent poeple names.
+            And based on this prompt: "{prompt}",
+    """
+    #TODO: Once we have a merged table, we are interested to match something else
+    
+    prompt = f"""{desc}\n,
+            Based on these 2 Tables above, which pairs of column names could represent similar entities.
+            Return only one pair.
+            Ensure that you only return column names that are present in the tables,
+            Return it as a Python list and nothing else."""
+
+    response = prompt_openai(prompt, api_key, max_tokens)
+    response = json.loads(clean_output(response))
+
+    # raise error
+    if len(response) > 2:
+        print("Error: More than 2 columns are matched. Returning only 1 pair of columns.")
+        response = response[:2]   
+
+    if verbose:
+        print("From Table 1 and 2, these are the matched column names:", response)
+    return response
+
+def conserve_names_of(prompt: str, entities: list, api_key: str, max_tokens: int = 200, 
+):
+    """
+    Get columns that represent names.
+
+    :param prompt: The prompt to get the relevant columns.
+    :param entities: A list containing entities i.e company names, people names, etc.
+    :param api_key: The OpenAI API key for authentication.
+    :param max_tokens: The maximum number of tokens in the response.
+    :return: A list conserving the type items requested.
+    """
+
+    prompt = f"""Based on this prompt: {prompt}\n,
+            From this list: {entities}, conserve the items that refer only to the prompt,
+            Ensure that you only return the exact names from the list,
+            Return it as a Python list and nothing else."""
+
+    response = prompt_openai(prompt, api_key, max_tokens)
+    response = json.loads(clean_output(response))
+
+    return response
+
+
 if __name__ == "__main__":
 
     with open("keys.json") as f:
         dic_keys = json.load(f)
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
-    df = pd.read_csv("out.csv")
-    prompt = "Get me a table of firms and their employees"
-    base_columns = df.columns
-    new_columns = augment_column_names(prompt, base_columns, OPENAI_TOKEN)
+    # df = pd.read_csv("out.csv")
+    # prompt = "Get me a table of firms and their employees"
+    # base_columns = df.columns
+    # new_columns = augment_column_names(prompt, base_columns, OPENAI_TOKEN)
 
-    print(prompt)
-    print(new_columns)
+    desc = """
+        This is a extract from the Table 1:
+        [0] Entry
+        [Column Name]: Author, [Value]: GreenThumb
+        [Column Name]: Excerpt, [Value]: "Urban gardening is a fantastic way to bring nature into the city and grow your own food."
+        [Column Name]: Title, [Value]: Urban Gardening Essentials
+        [Column Name]: Date, [Value]: 2024-04-14
+        [Column Name]: Company Name, [Value]: Llama inc.
+        [1] Entry
+        [Column Name]: Author, [Value]: John D.
+        [Column Name]: Excerpt, [Value]: "As a Senior Software Engineer at a leading tech company, I find Java indispensable for backend work."
+        [Column Name]: Title, [Value]: Mastering Java for Modern Apps
+        [Column Name]: Date, [Value]: 2024-05-01
+        [Column Name]: Company Name, [Value]: Tesla inc.
+        This is a extract from the Table 2:
+        [0] Entry
+        [Column Name]: Person Name, [Value]: Danilo Toapanta
+        [Column Name]: Education, [Value]: MSc AI
+        [Column Name]: Current Position, [Value]: CEO
+        [Column Name]: Skills, [Value]: ['Python']
+        [Column Name]: Previous Position, [Value]: CTO
+        [Column Name]: Company, [Value]: Alpaca
+        [Column Name]: Location, [Value]: Boston, MA
+        [1] Entry
+        [Column Name]: Person Name, [Value]: Kevin Young
+        [Column Name]: Education, [Value]: B.S. in Cybersecurity, Purdue
+        [Column Name]: Current Position, [Value]: Cybersecurity Analyst
+        [Column Name]: Skills, [Value]: ['Penetration Testing', 'Firewalls']
+        [Column Name]: Previous Position, [Value]: Network Administrator
+        [Column Name]: Company, [Value]: SecureNet Inc.
+        [Column Name]: Location, [Value]: Houston, TX
+    """
+    prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
+    # prompt = "Get me a table of companies and their people"
+    response = get_column_names(prompt, desc, OPENAI_TOKEN)
+    print(response)

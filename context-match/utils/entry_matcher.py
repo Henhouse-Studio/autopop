@@ -3,6 +3,7 @@ import pprint
 import argparse
 import pandas as pd
 import linktransformer as lt
+from utils.fuzzy_matcher import *
 from utils.prompt_to_openai import *
 from utils.compute_similarity import *
 from utils.fetch_table_notion import *
@@ -160,24 +161,70 @@ def merge_and_average_dicts(dict1, dict2):
     return merged_dict
 
 
+def generate_fuzzy_match_description(df_base: pd.DataFrame, df_populate: pd.DataFrame, 
+                                     n_samples: int = 2, random_state: int = 42, verbose: bool = False
+) -> str:
+    """
+    Generate a descriptive extract of two tables for fuzzy matching.
+
+    Args:
+        df_base (pd.DataFrame): The base DataFrame to sample from.
+        df_populate (pd.DataFrame): The populate DataFrame to sample from.
+        base_sample_size (int): Number of samples to take from the base DataFrame. Default is 2.
+        populate_sample_size (int): Number of samples to take from the populate DataFrame. Default is 2.
+        random_state (int): Random state for reproducibility. Default is 42.
+
+    Returns:
+        str: A formatted string representing a sample extract from both tables.
+    """
+
+    # Sample and extract from df_base
+    col_names_base = list(df_base.columns)
+    sample_base = df_base.sample(n=n_samples, random_state=random_state)
+    description = "This is a extract from the Table 1:\n"
+
+    for sample_value in range(len(sample_base)):
+        description += f"[{sample_value}] Entry\n"
+        for col_name in col_names_base:
+            description += f"[Column Name]: {col_name}, [Value]: {sample_base[col_name].values[sample_value]}\n"
+
+    # Sample and extract from df_populate
+    col_names_populate = list(df_populate.columns)
+    sample_populate = df_populate.sample(n=n_samples, random_state=random_state)
+    description += "This is a extract from the Table 2:\n"
+
+    for sample_value in range(len(sample_populate)):
+        description += f"[{sample_value}] Entry\n"
+        for col_name in col_names_populate:
+            description += f"[Column Name]: {col_name}, [Value]: {sample_populate[col_name].values[sample_value]}\n"
+    if verbose:
+        print(description)
+    return description
+
+
 # Entry matching
 def combine_dfs(
+    prompt: str,
     df_base: pd.DataFrame,
     df_populate: pd.DataFrame,
     base_weights: dict,
     pop_weights: dict,
     tolerance: float = 0.05,
+    api_key: str = None,
 ):
     """
     Combining the rows of two dataframes based on similarity scores using merge.
 
+    :param prompt: The prompt to use for the OpenAI API (str).
     :param df_base: The dataframe to enrich (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment (pd.DataFrame).
     :param base_weights: The dictionary containing the masks for the base dataframe (dict).
     :param pop_weights: The dictionary containing the masks for the populator dataframe (dict).
     :param df_weights: The encoder type to use (defaults to 'all-MiniLM-L6-v2').
     :param tolerance: How much to allow for potentially inaccurate matches (defaults to 0.15).
-    The higher the tolerance the more indirect matches are allowed.
+                      The higher the tolerance the more indirect matches are allowed.
+    :param api_key: The API key for renaming columns in the final dataframe (str).
+
     :return: The merged dataframe (pd.DataFrame) and the combined_weights (dict) between the two dataframes.
 
     * Note on pd.update:
@@ -200,15 +247,20 @@ def combine_dfs(
     )
 
     # Filter the scores by group
-    scores_f = filter_row_matches(scores)
+    # (row, col) : score
+    scores_f = filter_row_matches(scores) 
     # pprint.pprint(scores_f)
 
-    matched_base_indices = [i for i, _ in scores_f.keys()]
-    matched_populate_indices = [j for _, j in scores_f.keys()]
+    matched_base_indices = [int(i) for i, _ in scores_f.keys()]
+    matched_populate_indices = [int(j) for _, j in scores_f.keys()]
 
     # Extract the corresponding matching rows from each DataFrame using the index pairs
     matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
     matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
+
+    # add index column at beginning to keep track of the original index
+    matched_base.insert(0, "index_base", matched_base_indices)
+    matched_populate.insert(0, "index_pop", matched_populate_indices)
 
     # Combine matched DataFrames side by side and add confidence values
     matched_df = pd.concat(
@@ -218,6 +270,7 @@ def combine_dfs(
         ],
         axis=1,
     )
+
     matched_df["conf_values"] = list(scores_f.values())
     # matched_df.to_csv("test.csv", index=False)
 
@@ -226,15 +279,24 @@ def combine_dfs(
     matched_df = matched_df[matched_df["conf_values"] >= threshold]
 
     # Filter the scores based on the threshold
+    # (row, col) : scored_tresholded
     filtered_scores_f = {k: v for k, v in scores_f.items() if v >= threshold}
-    matched_base_indices = [i for i, _ in filtered_scores_f.keys()]
-    matched_populate_indices = [j for _, j in filtered_scores_f.keys()]
+
+    matched_base_indices = [i for i, _ in filtered_scores_f.keys()] 
+    matched_populate_indices = [j for _, j in filtered_scores_f.keys()] 
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
     unmatched_populate = df_populate.loc[
         ~df_populate.index.isin(matched_populate_indices)
     ]
+
+    # add index column at beginning to keep track of the original index
+    unmatched_base_indices = df_base.index.difference(matched_base_indices)
+    unmatched_populate_indices = df_populate.index.difference(matched_populate_indices)
+
+    unmatched_base.insert(0, "index_base", unmatched_base_indices)
+    unmatched_populate.insert(0, "index_pop", unmatched_populate_indices)
 
     # Append unmatched rows with NaN filled columns
     final_df = pd.concat(
@@ -260,14 +322,61 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    final_df.to_csv("merged.csv", index=False)
 
+    # Get matching column entities
+    desc_of_tables = generate_fuzzy_match_description(df_base, df_populate, n_samples=2, verbose=False)
+    matched_col_entities = get_column_names(prompt, desc_of_tables, api_key, verbose=True)
+
+    # Select matched entities columns and drop rows that have NA values
+    matched_entities_df = final_df[
+        ["index_base"]
+        + [matched_col_entities[0]]
+        + ["index_pop"]
+        + [matched_col_entities[1]]
+        + ["conf_values"]
+    ].dropna()
+    repeated_entities_df = matched_entities_df[
+        matched_entities_df.duplicated(subset=[matched_col_entities[0]], keep=False)
+    ]
+    repeated_entities_df.to_csv("repeated_entities.csv", index=False)
+
+    rescored_repeated_entities_df = fuzzy_entry_rescorer(repeated_entities_df)
+    rescored_repeated_entities_df.to_csv("rescored_repeated_entities.csv", index=False)
+    final_df.update(rescored_repeated_entities_df, overwrite=True)
+    final_df = final_df[final_df["conf_values"] >= threshold]
+    final_df.to_csv("final_df.csv", index=False)
+
+
+    # Find the missing indices in final_df from df_base and df_populate
+    missing_base_indices = df_base.index.difference(final_df['index_base'].dropna().astype(int))
+    missing_pop_indices = df_populate.index.difference(final_df['index_pop'].dropna().astype(int))
+
+    # Extract the corresponding rows from df_base and df_populate
+    missing_base_rows = df_base.loc[missing_base_indices].copy()
+    missing_pop_rows = df_populate.loc[missing_pop_indices].copy()
+
+    # Handle missing columns by adding NaN-filled columns
+    for col in final_df.columns:
+        if col not in missing_base_rows.columns:
+            missing_base_rows[col] = None
+        if col not in missing_pop_rows.columns:
+            missing_pop_rows[col] = None
+
+    # Concatenate missing rows with the final_df
+    final_combined_df = pd.concat([final_df, missing_base_rows, missing_pop_rows], ignore_index=True)
+
+    # Drop index_base and index_pop columns
+    final_combined_df.drop(columns=['index_base', 'index_pop'], inplace=True)
+    print(final_combined_df.index)
+
+    # Save the final dataframe to a new CSV
+    final_combined_df.to_csv('final_combined_df.csv', index=False)
     print("Merged dataframes!")
-    sys.exit()
+
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
 
-    return final_df, combined_weights
+    return final_combined_df, combined_weights
 
 
 def enrich_dataframes(
@@ -324,7 +433,7 @@ def enrich_dataframes(
 
 
 def merge_top_k(
-    df_ranked: dict, dict_weights: dict, api_key: str, args: argparse.Namespace
+    prompt:str, df_ranked: dict, dict_weights: dict, api_key: str, args: argparse.Namespace
 ):
     """
     Merge top-ranked dataframes sequentially based on matching criteria and weighted values.
@@ -351,7 +460,8 @@ def merge_top_k(
         df_populate = df_ranked[table_name]
         pop_weights = dict_weights[table_name]
         df_combined, new_weights = combine_dfs(
-            df_base, df_populate, base_weights, pop_weights, tolerance=args.tolerance
+            prompt, df_base, df_populate, base_weights, pop_weights, 
+            tolerance=args.tolerance, api_key=api_key
         )
 
         # Ensure that the rows actually do match, otherwise the dataframes are likely mismatched
