@@ -222,7 +222,7 @@ def combine_dfs(
     # matched_df.to_csv("test.csv", index=False)
 
     # Filter by confidence threshold
-    threshold = (1 - tolerance) * 0.5
+    threshold = (1 - tolerance) * 0.48
     matched_df = matched_df[matched_df["conf_values"] >= threshold]
 
     # Filter the scores based on the threshold
@@ -260,8 +260,10 @@ def combine_dfs(
 
     # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
     final_df["conf_values"].fillna(0, inplace=True)
-    # final_df.to_csv("merged.csv", index=False)
+    final_df.to_csv("merged.csv", index=False)
 
+    print("Merged dataframes!")
+    sys.exit()
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
 

@@ -162,14 +162,15 @@ def rerank_dataframes(
 
     for desc in desc_batches:
         prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc}.\n
-                    Select the most relevant tables and then sort them according to relevance in descending order.
+                    Select only the most relevant tables and sort them according to relevance in descending order. That means the most relevant first (to the left) and the least relevant last (to the right)
                     Get me the table names as a Python list and nothing else.
                     If none of the tables are relevant, return an empty list."""
         response = prompt_openai(prompt, api_key, max_tokens)
         response = clean_output(response)
         response_batches += response
 
-    return json.loads(response_batches)
+    response_list = json.loads(response_batches.replace("'", '"'))
+    return response_list
 
 
 def get_relevant_columns(

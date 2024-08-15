@@ -25,7 +25,7 @@ def config():
     )
     parser.add_argument(
         "--tolerance",
-        default=0.05,
+        default=0.1,
         type=float,
         help="Controls when two rows are allowed to match",
     )
@@ -71,8 +71,12 @@ if __name__ == "__main__":
 
     # The user prompt
     # prompt = "Get me a table of firms and their employees"
-    prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
+    # prompt = "Get me a table of blogpost authors and their LinkedIn profiles"
     # prompt = "I want to find people who work for the government"
+    # prompt = "Get me tables that contain people and their companies"
+    # prompt = "Get me a table that contains people"
+    # prompt = "Get me a table that contains only companies "
+    prompt = "Get me a table that contains only skills of people"
 
     # Prompt enrichment for refined search
     enriched_prompt = handle_prompt(

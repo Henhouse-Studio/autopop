@@ -131,9 +131,8 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     """
     prompt = (
         original_prompt
-        + """\n\nBased on the prompt above, return 5 columns that should be present in the database
-        and keywords to help search for the relevant tables. 
-        Return everything as a Python list and nothing else."""
+        + """\n\nBased on the prompt above, return 5 columns that should be present in the database and 5 keywords to help search for the relevant tables. 
+        Return these 10 items into one single Python list and nothing else."""
     )
 
     response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=max_tokens)
@@ -156,12 +155,17 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     if not isinstance(response_json, (list, dict)):
         raise ValueError("Decoded JSON is not a list or dict")
 
-    # Convert the JSON response to a string
-    response = (
-        ", ".join(response_json)
-        if isinstance(response_json, list)
-        else ", ".join(response_json.values())
-    )
+    # Flatten and convert to strings if necessary
+    if isinstance(response_json, list):
+        flattened_response = []
+        for item in response_json:
+            if isinstance(item, list):
+                flattened_response.extend(map(str, item))
+            else:
+                flattened_response.append(str(item))
+        response = ", ".join(flattened_response)
+    else:
+        response = ", ".join(str(value) for value in response_json.values())
 
     enriched_prompt = (
         original_prompt

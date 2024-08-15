@@ -156,7 +156,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
         path_table = f"databases/table_of_tables/{table_name}.csv"
-        print(f"Found{' Fact' * is_fact} table '{table_name}'")
+        print(f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'")
 
         for table in tables:
 
@@ -185,8 +185,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
             df_dict[table_name] = (is_fact, df)
 
-    print(f"Number of databases found: {len(df_dict)}\n")
-
+    print(f"[*] Number of databases found: {len(df_dict)}\n")
     return df_dict
 
 
@@ -239,28 +238,38 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
     )
 
     # Filter out the relevant tables from df_dict by the names
-    df_ranked = {
-        table_name: value
-        for table_name, value in df_dict.items()
-        if table_name in relevant_tables
-    }
-    df_fact_ranked = {
-        table_name: value
-        for table_name, value in df_fact_dict.items()
-        if table_name in relevant_fact_tables
-    }
+    # df_ranked = {
+    #     table_name: value
+    #     for table_name, value in df_dict.items()
+    #     if table_name in relevant_tables
+    # }
 
-    print(f"Selecting Top-{len(relevant_tables)} from:")
+    # df_fact_ranked = {
+    #     table_name: value
+    #     for table_name, value in df_fact_dict.items()
+    #     if table_name in relevant_fact_tables
+    # }
+
+    df_ranked = {}
+    for table_name in relevant_tables:
+        df_ranked[table_name] = df_dict[table_name]
+    
+    df_fact_ranked = {}
+    for table_name in relevant_fact_tables:
+        df_fact_ranked[table_name] = df_fact_dict[table_name]
+
+
+    print(f"Selecting Top-{len(relevant_tables)} tables:")
 
     # printing similarity score, name of df_ranked
-    for i, (key, _) in enumerate(df_dict.items()):
+    for i, (key, _) in enumerate(df_ranked.items()):
 
         print(f"[{i+1}]:", key)
 
-    print(f"Selecting Top-{len(relevant_fact_tables)} Fact tables from:")
+    print(f"Selecting Top-{len(relevant_fact_tables)} Fact tables:")
 
     # printing similarity score, name of df_ranked
-    for i, (key, _) in enumerate(df_fact_dict.items()):
+    for i, (key, _) in enumerate(df_fact_ranked.items()):
 
         print(f"[{i+1}]:", key)
 
