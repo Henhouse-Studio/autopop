@@ -3,6 +3,7 @@ import pprint
 import argparse
 import pandas as pd
 import linktransformer as lt
+from typing import Tuple, Dict
 from utils.fuzzy_matcher import *
 from utils.prompt_to_openai import *
 from utils.compute_similarity import *
@@ -202,8 +203,8 @@ def generate_fuzzy_match_description(df_base: pd.DataFrame, df_populate: pd.Data
     return description
 
 
-# Entry matching
-def combine_dfs(
+# TODO: Refactor the function to use the new fuzzy_matcher.py functions
+def combine_dfs_deprecated(
     prompt: str,
     df_base: pd.DataFrame,
     df_populate: pd.DataFrame,
@@ -240,7 +241,6 @@ def combine_dfs(
     df_entries_base = df_base[list(base_weights.keys())]
     df_entries_pop = df_populate[list(pop_weights.keys())]
 
-    print("Computing between-row similarities...")
     scores = compute_similarity_entries_row(
         df_reweighting(df_entries_base, base_weights),
         df_reweighting(df_entries_pop, pop_weights),
@@ -346,7 +346,6 @@ def combine_dfs(
     final_df = final_df[final_df["conf_values"] >= threshold]
     final_df.to_csv("final_df.csv", index=False)
 
-
     # Find the missing indices in final_df from df_base and df_populate
     missing_base_indices = df_base.index.difference(final_df['index_base'].dropna().astype(int))
     missing_pop_indices = df_populate.index.difference(final_df['index_pop'].dropna().astype(int))
@@ -371,6 +370,241 @@ def combine_dfs(
 
     # Save the final dataframe to a new CSV
     final_combined_df.to_csv('final_combined_df.csv', index=False)
+    print("Merged dataframes!")
+
+    # Combine the dictionary weights for merging later if needed
+    combined_weights = merge_and_average_dicts(base_weights, pop_weights)
+
+    return final_combined_df, combined_weights
+
+
+def extract_and_create_matched_df(
+    dfs_to_merge: Tuple[pd.DataFrame, pd.DataFrame],
+    matched_col_names: Tuple[str, str],
+    filtered_scores_f: Dict[Tuple[int, int], float],
+    save_csv: bool = False,
+) -> pd.DataFrame:
+    """
+    Extract matched base and populate indices and their corresponding rows, and create a DataFrame with the selected columns and confidence values.
+
+    :param dfs_to_merge: A tuple containing the base and populate DataFrames (df_base, df_populate).
+    :param matched_col_names: A tuple containing the column names to match (col_name_base, col_name_pop).
+    :param filtered_scores_f: The dictionary of filtered scores with keys as (base_index, populate_index).
+    :param save_csv: If True, save the resulting DataFrame to a CSV file (default is False).
+    :return: A DataFrame with matched indices, selected columns, and confidence values.
+    """
+
+    # Extract DataFrames and column names
+    df_base, df_populate = dfs_to_merge
+    col_name_base, col_name_pop = matched_col_names
+
+    # Extract matched indices
+    matched_base_indices = [int(i) for i, _ in filtered_scores_f.keys()]
+    matched_populate_indices = [int(j) for _, j in filtered_scores_f.keys()]
+
+    # Extract matched rows
+    matched_rows_base = df_base.loc[matched_base_indices, col_name_base].values
+    matched_rows_populate = df_populate.loc[
+        matched_populate_indices, col_name_pop
+    ].values
+
+    # Create the DataFrame with matched entities
+    matched_entities_df = pd.DataFrame(
+        {
+            "index_base": matched_base_indices,
+            col_name_base: matched_rows_base,
+            "index_pop": matched_populate_indices,
+            col_name_pop: matched_rows_populate,
+            "conf_values": [
+                filtered_scores_f[k]
+                for k in zip(matched_base_indices, matched_populate_indices)
+            ],
+        }
+    )
+
+    if save_csv:
+        matched_entities_df.to_csv("matched_entities.csv", index=False)
+
+    return matched_entities_df
+
+
+def rescore_and_update_filtered_scores(
+    matched_entities_df: pd.DataFrame,
+    col_name_base: str,
+    threshold: float,
+    filtered_scores_f: Dict[Tuple[int, int], float],
+    save_csv: bool = False,
+) -> Dict[Tuple[int, int], float]:
+    """
+    Identify repeated entities, rescore them, and update the filtered scores.
+
+    :param matched_entities_df: The DataFrame containing the matched entities.
+    :param col_name_base: The name of the column in df_base to check for duplicates.
+    :param threshold: The confidence threshold for filtering scores.
+    :param filtered_scores_f: The dictionary of filtered scores with keys as (base_index, populate_index) tuples and values as the confidence scores.
+    :param save_csv: If True, save the resulting DataFrames to CSV files (default is False).
+    :return: Updated filtered_scores_f dictionary.
+    """
+
+    # Find repeated entities
+    repeated_entities_df = matched_entities_df.loc[
+        matched_entities_df.duplicated(subset=[col_name_base], keep=False)
+    ]
+
+    if save_csv:
+        repeated_entities_df.to_csv("repeated_entities.csv", index=False)
+
+    # Rescore the repeated entities
+    rescored_repeated_entities_df = fuzzy_entry_rescorer(repeated_entities_df)
+
+    if save_csv:
+        rescored_repeated_entities_df.to_csv(
+            "rescored_repeated_entities.csv", index=False
+        )
+
+    # Update the filtered scores with rescored values
+    rescored_scores = dict(
+        zip(
+            zip(
+                rescored_repeated_entities_df["index_base"],
+                rescored_repeated_entities_df["index_pop"],
+            ),
+            rescored_repeated_entities_df["conf_values"],
+        )
+    )
+
+    filtered_scores_f.update(rescored_scores)
+
+    # Filter scores again based on the threshold
+    return {k: v for k, v in filtered_scores_f.items() if v >= threshold}
+
+
+def combine_matched_unmatched(
+    dfs_to_merge: Tuple[pd.DataFrame, pd.DataFrame],
+    filtered_scores_f: Dict[Tuple[int, int], float],
+    save_csv: bool = False
+) -> pd.DataFrame:
+    """
+    Combine matched DataFrames and handle unmatched rows.
+
+    :param dfs_to_merge: A tuple containing the base and populate DataFrames (df_base, df_populate).
+    :param filtered_scores_f: The dictionary of filtered scores with keys as (base_index, populate_index).
+    :param save_csv: If True, save the resulting DataFrame to a CSV file (default is False).
+    :return: The final combined DataFrame with matched and unmatched rows.
+    """
+
+    # Extract DataFrames to merge
+    df_base, df_populate = dfs_to_merge
+
+    # Extract matched indices
+    matched_base_indices = [int(i) for i, _ in filtered_scores_f.keys()]
+    matched_populate_indices = [int(j) for _, j in filtered_scores_f.keys()]
+
+    # Extract matched rows
+    matched_rows_base = df_base.loc[matched_base_indices].reset_index(drop=True)
+    matched_rows_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
+
+    # Combine matched rows side by side
+    matched_df = pd.concat(
+        [
+            matched_rows_base,
+            matched_rows_populate.drop(columns=matched_rows_base.columns, errors="ignore"),
+        ],
+        axis=1,
+    )
+    matched_df["conf_values"] = list(filtered_scores_f.values())
+
+    # Identify unmatched rows and assign NaN for missing columns
+    unmatched_rows_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
+    unmatched_rows_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)]
+
+    # Combine matched and unmatched rows into the final DataFrame
+    final_combined_df = pd.concat(
+        [
+            matched_df,
+            unmatched_rows_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_rows_base.columns}),
+            unmatched_rows_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_rows_populate.columns}),
+        ],
+        ignore_index=True,
+    )
+
+    # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
+    final_combined_df["conf_values"].fillna(0, inplace=True)
+
+    if save_csv:
+        final_combined_df.to_csv('final_combined_df.csv', index=False)
+
+    return final_combined_df
+
+
+# Entry matching
+def combine_dfs(
+    prompt: str,
+    df_base: pd.DataFrame,
+    df_populate: pd.DataFrame,
+    base_weights: dict,
+    pop_weights: dict,
+    tolerance: float = 0.05,
+    api_key: str = None,
+) -> pd.DataFrame:
+    """
+    Combining the rows of two dataframes based on similarity scores using merge.
+
+    :param prompt: The prompt to use for the OpenAI API (str).
+    :param df_base: The dataframe to enrich (pd.DataFrame).
+    :param df_populate: The dataframe used for enrichment (pd.DataFrame).
+    :param base_weights: The dictionary containing the masks for the base dataframe (dict).
+    :param pop_weights: The dictionary containing the masks for the populator dataframe (dict).
+    :param df_weights: The encoder type to use (defaults to 'all-MiniLM-L6-v2').
+    :param tolerance: How much to allow for potentially inaccurate matches (defaults to 0.15).
+                      The higher the tolerance the more indirect matches are allowed.
+    :param api_key: The API key for renaming columns in the final dataframe (str).
+
+    :return: The merged dataframe (pd.DataFrame) and the combined_weights (dict) between the two dataframes.
+    """
+    # Filter by confidence threshold
+    threshold = (1 - tolerance) * 0.48
+
+    # Get matching column entities
+    desc_of_tables = generate_fuzzy_match_description(df_base, df_populate, n_samples=2, verbose=False)
+    col_name_base, col_name_pop  = get_column_names(prompt, desc_of_tables, api_key, verbose=True)
+
+    # Creating a mask based on the weight dict for the dataframes
+    df_entries_base = df_base[list(base_weights.keys())]
+    df_entries_pop = df_populate[list(pop_weights.keys())]
+
+    scores = compute_similarity_entries_row(
+        df_reweighting(df_entries_base, base_weights),
+        df_reweighting(df_entries_pop, pop_weights),
+    )
+
+    # Filter the scores by group - (row, col) : score
+    scores_f = filter_row_matches(scores)
+    filtered_scores_f = {k: v for k, v in scores_f.items() if v >= threshold}
+
+    # Extract matched entities
+    matched_entities_df = extract_and_create_matched_df(
+        dfs_to_merge=(df_base, df_populate),
+        matched_col_names=(col_name_base, col_name_pop),
+        filtered_scores_f=filtered_scores_f,
+        save_csv=False,
+    )
+
+    # Rescore and update filtered scores based on repeated entities
+    filtered_scores_f = rescore_and_update_filtered_scores(
+        matched_entities_df=matched_entities_df,
+        col_name_base=col_name_base,
+        threshold=threshold,
+        filtered_scores_f=filtered_scores_f,
+        save_csv=False,
+    )
+
+    # Combine matched and unmatched rows into the final DataFrame
+    final_combined_df = combine_matched_unmatched(
+        dfs_to_merge=(df_base, df_populate),
+        filtered_scores_f=filtered_scores_f,
+        save_csv=True
+    )
     print("Merged dataframes!")
 
     # Combine the dictionary weights for merging later if needed
@@ -474,7 +708,5 @@ def merge_top_k(
 
     # Rename columns in case there are similar names
     final_df = rename_columns(df_base, api_key=api_key)
-
-    # print(final_df)
 
     return final_df
