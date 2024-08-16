@@ -103,7 +103,7 @@ if __name__ == "__main__":
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
 
     # Merge the enriched dataframes
-    final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
+    final_df = merge_top_k(df_enriched, dict_weights, OPENAI_TOKEN, args)
     final_df.to_csv("final.csv", index=False)
 
     print("Dataset exported!")
