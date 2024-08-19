@@ -1,0 +1,89 @@
+/* style.css */
+/* Main Body */
+.stChatMessage {
+    background-color: #b22e2ede;
+    padding: 4%;
+    border-radius: 15px;
+}
+
+.stChatInput {
+    background-color: #b22e2ede;
+}
+
+.stButton > button {
+    background-color: #f0f418;
+    color: white;
+}
+
+/* .stExpander {
+    background-color: #2585a5;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.stContainer {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+} */
+
+/* For Text Elements*/
+p {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+h1 {
+    color: #000000;
+}
+h2 {
+    color: #000000;
+}
+h3 {
+    color: #000000;
+}
+
+/* For Input Fields */
+input {
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+textarea {
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+
+/* For Code Blocks */
+/* pre {
+    background-color: #f8f8f8;
+    padding: 10px;
+    border-radius: 5px;
+} */
+
+/* code {
+    background-color: #e8e8e8;
+    padding: 2px 4px;
+    border-radius: 3px;
+} */
+
+/* For Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}

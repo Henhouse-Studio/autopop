@@ -26,3 +26,4 @@ cdist.ipynb
 llamaindex/old
 llamaindex/data
 llamaindex/utils/storage
+llamaindex/chat_logs

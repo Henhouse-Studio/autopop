@@ -1,14 +1,49 @@
 import json
 import streamlit as st
 from openai import OpenAI
+from utils.streamlit_utils import *
 
 
 if __name__ == "__main__":
 
-    # Set the screen title
-    st.title("AutoPop ChatBot")
+    # #  Load the CSS
+    # load_css(CSS_LOC)
 
-    # Load API keys
+    # Workaround for the body, sidebar, and header/footer colors
+    # (requires below formatting)
+    # st.markdown(
+    #     """
+    #     <style>
+    #     [data-testid="stSidebarContent"] {
+    #         color: black;
+    #         background-color: #FF9E50;
+    #     }
+    #     [data-testid="stSidebarContent"] {
+    #         color: black;
+    #         background-color: #FF9E50;
+    #     }
+    #     [data-testid="stAppViewContainer"] {
+    #         color: brown;
+    #         background-color: white;
+    #     }
+    #     [data-testid="stHeader"] {
+    #         color: black;
+    #         background-color: rgba(0, 0, 0, 0);
+    #     }
+    #     [data-testid="stBottom"] {
+    #         color: white !important;
+    #         background-color: white !important;
+    #     }
+    #     </style>
+    #     """,
+    #     unsafe_allow_html=True,
+    # )
+
+    # Title Container
+    with st.container():
+        st.title("AutoPop ChatBot")
+
+    # Load the API keys
     with open("llamaindex/keys.json") as f:
         dic_keys = json.load(f)
         client = OpenAI(api_key=dic_keys["openAI_token"])
@@ -20,42 +55,46 @@ if __name__ == "__main__":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    if "conversations" not in st.session_state:
-        st.session_state.conversations = {}
+    if "chats" not in st.session_state:
+        st.session_state.chats = load_chats()
 
-    if "current_conversation" not in st.session_state:
-        st.session_state.current_conversation = "New Chat"
+    if "current_chat" not in st.session_state:
+        st.session_state.current_chat = "New Chat"
 
-    # Sidebar for conversation management
+    if "delete_flag" not in st.session_state:
+        st.session_state.delete_flag = False
+
+    # Sidebar for chat management
     with st.sidebar:
-        st.title("Conversations")
 
-        # Button to start a new conversation
+        st.subheader("Conversations")
+        # Button to start a new chat
         if st.button("New Chat"):
-            st.session_state.current_conversation = "New Chat"
+            st.session_state.current_chat = "New Chat"
             st.session_state.messages = []
 
-        # Display saved conversations
-        for title in st.session_state.conversations.keys():
-            if st.button(title):
-                st.session_state.current_conversation = title
-                st.session_state.messages = st.session_state.conversations[title]
-
-        # Input for saving the current conversation
-        new_title = st.text_input("Save current chat as:")
-        if new_title and st.button("Save"):
-            st.session_state.conversations[new_title] = st.session_state.messages
-            st.session_state.current_conversation = new_title
+        # Display saved chats with delete buttons
+        for title in list(st.session_state.chats.keys()):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button(title, key=f"open_{title}"):
+                    st.session_state.current_chat = title
+                    st.session_state.messages = st.session_state.chats[title]
+            with col2:
+                if st.button("🗑️", key=f"delete_{title}"):
+                    delete_chat(title)
+                    st.session_state.delete_flag = True
+                    st.rerun()
 
     # Main chat interface
-    st.subheader(f"Current Conversation: {st.session_state.current_conversation}")
-
+    st.subheader(f"{st.session_state.current_chat}")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
     if prompt := st.chat_input("What's up?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
+
         with st.chat_message("user"):
             st.markdown(prompt)
 
@@ -71,8 +110,25 @@ if __name__ == "__main__":
             response = st.write_stream(stream)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-        # Update the current conversation in the saved conversations
-        if st.session_state.current_conversation != "New Chat":
-            st.session_state.conversations[st.session_state.current_conversation] = (
+        # Auto-save and generate title for new chats
+        if (
+            st.session_state.current_chat == "New Chat"
+            and len(st.session_state.messages) == 2
+        ):
+            new_title = generate_title(client, st.session_state.messages)
+            st.session_state.current_chat = new_title
+            st.session_state.chats[new_title] = st.session_state.messages
+            save_chat(new_title, st.session_state.messages)
+            st.rerun()
+
+        # Update the current chat in the saved chats
+        if st.session_state.current_chat != "New Chat":
+            st.session_state.chats[st.session_state.current_chat] = (
                 st.session_state.messages
             )
+            save_chat(st.session_state.current_chat, st.session_state.messages)
+
+    # Handle deletion rerun
+    if st.session_state.delete_flag:
+        st.session_state.delete_flag = False
+        st.rerun()
