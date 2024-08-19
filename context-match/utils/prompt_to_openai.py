@@ -174,7 +174,7 @@ def rerank_dataframes(
 
 
 def get_relevant_columns(
-    prompt: str,
+    original_prompt: str,
     df_ranked: dict,
     api_key: str,
     args: argparse.Namespace = None,
@@ -197,7 +197,7 @@ def get_relevant_columns(
     for table_name, (_, _, desc) in df_ranked.items():
 
         prompt = f"""Based on this prompt:\n
-                    {prompt}\n
+                    {original_prompt}\n
                     Analyze the below dataframe and select the most relevant column names based on the above prompt.
                     {desc}
                     Return only the relevant column names as a python dictionary (outside of a variable), with the key being the
