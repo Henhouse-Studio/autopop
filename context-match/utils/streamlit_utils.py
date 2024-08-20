@@ -16,7 +16,7 @@ def save_chat(title, messages):
     file_path = os.path.join(SAVE_FOLDER, f"{title}.json")
 
     with open(file_path, "w") as f:
-        json.dump(messages, f)
+        json.dump(messages, f, indent=2)
 
 
 def load_chats():
