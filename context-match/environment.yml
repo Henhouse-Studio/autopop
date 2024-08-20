@@ -21,3 +21,7 @@ dependencies:
       - openai
       - pprintpp
       - linktransformer
+      - streamlit
+      - openai
+      - llama-index
+      - langchain-community

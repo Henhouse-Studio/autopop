@@ -1,6 +1,7 @@
 import json
 import streamlit as st
 from openai import OpenAI
+from utils.constants import *
 from utils.streamlit_utils import *
 
 
@@ -44,7 +45,7 @@ if __name__ == "__main__":
         st.title("AutoPop ChatBot")
 
     # Load the API keys
-    with open("llamaindex/keys.json") as f:
+    with open(KEYFILE_LOC) as f:
         dic_keys = json.load(f)
         client = OpenAI(api_key=dic_keys["openAI_token"])
 
@@ -75,11 +76,13 @@ if __name__ == "__main__":
 
         # Display saved chats with delete buttons
         for title in list(st.session_state.chats.keys()):
+
             col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button(title, key=f"open_{title}"):
                     st.session_state.current_chat = title
                     st.session_state.messages = st.session_state.chats[title]
+
             with col2:
                 if st.button("🗑️", key=f"delete_{title}"):
                     delete_chat(title)
@@ -123,6 +126,7 @@ if __name__ == "__main__":
 
         # Update the current chat in the saved chats
         if st.session_state.current_chat != "New Chat":
+
             st.session_state.chats[st.session_state.current_chat] = (
                 st.session_state.messages
             )
@@ -130,5 +134,6 @@ if __name__ == "__main__":
 
     # Handle deletion rerun
     if st.session_state.delete_flag:
+
         st.session_state.delete_flag = False
         st.rerun()

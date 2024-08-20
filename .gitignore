@@ -1,29 +1,18 @@
-context-match/~
-context-match/out.csv
-context-match/locations_with_facts.csv
-
-# Ignore several things in context-match
-image-match/images
+# Universal ignores
 **/__pycache__
 **/keys.json
 .DS_Store
-context-match/llama3/
+*.csv
+*.npy
+*.json
 
-context-match/out.csv
-context-match/locations_with_facts.csv
+# Ignore several things in context-match
+context-match/~
+context-match/bin
+context-match/llama3/
+context-match/test.ipynb
+context-match/edgedriver_mac64_m1/
+context-match/html_files_studylink/
 
 # Ignore several things in image-match
 image-match/images
-context-match/edgedriver_mac64_m1/
-context-match/html_files_studylink/
-*.csv
-*.npy
-context-match/test.ipynb
-context-match/bin
-cdist.ipynb
-
-# Ignore several things in llamaindex
-llamaindex/old
-llamaindex/data
-llamaindex/utils/storage
-llamaindex/chat_logs

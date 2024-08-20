@@ -70,4 +70,4 @@ def aggregate_tables(
 if __name__ == "__main__":
 
     table = aggregate_tables("Get me a table of firms")
-    table.to_csv("final.csv")
+    table.to_csv("data/final.csv")
