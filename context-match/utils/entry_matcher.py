@@ -1,5 +1,3 @@
-import sys
-import pprint
 import argparse
 import pandas as pd
 import linktransformer as lt
@@ -162,9 +160,14 @@ def merge_and_average_dicts(dict1, dict2):
     return merged_dict
 
 
-def generate_fuzzy_match_description(df_base: pd.DataFrame, df_populate: pd.DataFrame, 
-                                     n_samples: int = 2, random_state: int = 42, verbose: bool = False
-) -> str:
+def generate_fuzzy_match_description(
+    df_base: pd.DataFrame,
+    df_populate: pd.DataFrame,
+    n_samples: int = 2,
+    random_state: int = 42,
+    verbose: bool = False,
+):
+    
     """
     Generate a descriptive extract of two tables for fuzzy matching.
 
@@ -198,184 +201,11 @@ def generate_fuzzy_match_description(df_base: pd.DataFrame, df_populate: pd.Data
         description += f"[{sample_value}] Entry\n"
         for col_name in col_names_populate:
             description += f"[Column Name]: {col_name}, [Value]: {sample_populate[col_name].values[sample_value]}\n"
+    
     if verbose:
         print(description)
+
     return description
-
-
-# TODO: Refactor the function to use the new fuzzy_matcher.py functions
-def combine_dfs_deprecated(
-    prompt: str,
-    df_base: pd.DataFrame,
-    df_populate: pd.DataFrame,
-    base_weights: dict,
-    pop_weights: dict,
-    tolerance: float = 0.05,
-    api_key: str = None,
-):
-    """
-    Combining the rows of two dataframes based on similarity scores using merge.
-
-    :param prompt: The prompt to use for the OpenAI API (str).
-    :param df_base: The dataframe to enrich (pd.DataFrame).
-    :param df_populate: The dataframe used for enrichment (pd.DataFrame).
-    :param base_weights: The dictionary containing the masks for the base dataframe (dict).
-    :param pop_weights: The dictionary containing the masks for the populator dataframe (dict).
-    :param df_weights: The encoder type to use (defaults to 'all-MiniLM-L6-v2').
-    :param tolerance: How much to allow for potentially inaccurate matches (defaults to 0.15).
-                      The higher the tolerance the more indirect matches are allowed.
-    :param api_key: The API key for renaming columns in the final dataframe (str).
-
-    :return: The merged dataframe (pd.DataFrame) and the combined_weights (dict) between the two dataframes.
-
-    * Note on pd.update:
-        - If matched_base has a NaN value in the Location column, and matched_populate has a
-          corresponding non-NaN value, matched_base will be updated with the value from matched_populate.
-        - If matched_base already has a non-NaN value, it will not be overwritten because overwrite=False.
-
-        # Update matched base DataFrame with populate DataFrame values
-        # matched_base.update(matched_populate, overwrite=False)
-    """
-
-    # Creating a mask based on the weight dict for the dataframes
-    df_entries_base = df_base[list(base_weights.keys())]
-    df_entries_pop = df_populate[list(pop_weights.keys())]
-
-    scores = compute_similarity_entries_row(
-        df_reweighting(df_entries_base, base_weights),
-        df_reweighting(df_entries_pop, pop_weights),
-    )
-
-    # Filter the scores by group
-    # (row, col) : score
-    scores_f = filter_row_matches(scores) 
-    # pprint.pprint(scores_f)
-
-    matched_base_indices = [int(i) for i, _ in scores_f.keys()]
-    matched_populate_indices = [int(j) for _, j in scores_f.keys()]
-
-    # Extract the corresponding matching rows from each DataFrame using the index pairs
-    matched_base = df_base.loc[matched_base_indices].reset_index(drop=True)
-    matched_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
-
-    # add index column at beginning to keep track of the original index
-    matched_base.insert(0, "index_base", matched_base_indices)
-    matched_populate.insert(0, "index_pop", matched_populate_indices)
-
-    # Combine matched DataFrames side by side and add confidence values
-    matched_df = pd.concat(
-        [
-            matched_base,
-            matched_populate.drop(columns=matched_base.columns, errors="ignore"),
-        ],
-        axis=1,
-    )
-
-    matched_df["conf_values"] = list(scores_f.values())
-    # matched_df.to_csv("test.csv", index=False)
-
-    # Filter by confidence threshold
-    threshold = (1 - tolerance) * 0.48
-    matched_df = matched_df[matched_df["conf_values"] >= threshold]
-
-    # Filter the scores based on the threshold
-    # (row, col) : scored_tresholded
-    filtered_scores_f = {k: v for k, v in scores_f.items() if v >= threshold}
-
-    matched_base_indices = [i for i, _ in filtered_scores_f.keys()] 
-    matched_populate_indices = [j for _, j in filtered_scores_f.keys()] 
-
-    # Identify unmatched rows and assign NaN for missing columns
-    unmatched_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
-    unmatched_populate = df_populate.loc[
-        ~df_populate.index.isin(matched_populate_indices)
-    ]
-
-    # add index column at beginning to keep track of the original index
-    unmatched_base_indices = df_base.index.difference(matched_base_indices)
-    unmatched_populate_indices = df_populate.index.difference(matched_populate_indices)
-
-    unmatched_base.insert(0, "index_base", unmatched_base_indices)
-    unmatched_populate.insert(0, "index_pop", unmatched_populate_indices)
-
-    # Append unmatched rows with NaN filled columns
-    final_df = pd.concat(
-        [
-            matched_df,
-            unmatched_base.assign(
-                **{
-                    col: None
-                    for col in df_populate.columns
-                    if col not in unmatched_base.columns
-                }
-            ),
-            unmatched_populate.assign(
-                **{
-                    col: None
-                    for col in df_base.columns
-                    if col not in unmatched_populate.columns
-                }
-            ),
-        ],
-        ignore_index=True,
-    )
-
-    # Ensure all unmatched rows have a 'conf_values' column with 0 as a default value
-    final_df["conf_values"].fillna(0, inplace=True)
-
-    # Get matching column entities
-    desc_of_tables = generate_fuzzy_match_description(df_base, df_populate, n_samples=2, verbose=False)
-    matched_col_entities = get_column_names(prompt, desc_of_tables, api_key, verbose=True)
-
-    # Select matched entities columns and drop rows that have NA values
-    matched_entities_df = final_df[
-        ["index_base"]
-        + [matched_col_entities[0]]
-        + ["index_pop"]
-        + [matched_col_entities[1]]
-        + ["conf_values"]
-    ].dropna()
-    repeated_entities_df = matched_entities_df[
-        matched_entities_df.duplicated(subset=[matched_col_entities[0]], keep=False)
-    ]
-    repeated_entities_df.to_csv("repeated_entities.csv", index=False)
-
-    rescored_repeated_entities_df = fuzzy_entry_rescorer(repeated_entities_df)
-    rescored_repeated_entities_df.to_csv("rescored_repeated_entities.csv", index=False)
-    final_df.update(rescored_repeated_entities_df, overwrite=True)
-    final_df = final_df[final_df["conf_values"] >= threshold]
-    final_df.to_csv("final_df.csv", index=False)
-
-    # Find the missing indices in final_df from df_base and df_populate
-    missing_base_indices = df_base.index.difference(final_df['index_base'].dropna().astype(int))
-    missing_pop_indices = df_populate.index.difference(final_df['index_pop'].dropna().astype(int))
-
-    # Extract the corresponding rows from df_base and df_populate
-    missing_base_rows = df_base.loc[missing_base_indices].copy()
-    missing_pop_rows = df_populate.loc[missing_pop_indices].copy()
-
-    # Handle missing columns by adding NaN-filled columns
-    for col in final_df.columns:
-        if col not in missing_base_rows.columns:
-            missing_base_rows[col] = None
-        if col not in missing_pop_rows.columns:
-            missing_pop_rows[col] = None
-
-    # Concatenate missing rows with the final_df
-    final_combined_df = pd.concat([final_df, missing_base_rows, missing_pop_rows], ignore_index=True)
-
-    # Drop index_base and index_pop columns
-    final_combined_df.drop(columns=['index_base', 'index_pop'], inplace=True)
-    print(final_combined_df.index)
-
-    # Save the final dataframe to a new CSV
-    final_combined_df.to_csv('final_combined_df.csv', index=False)
-    print("Merged dataframes!")
-
-    # Combine the dictionary weights for merging later if needed
-    combined_weights = merge_and_average_dicts(base_weights, pop_weights)
-
-    return final_combined_df, combined_weights
 
 
 def extract_and_create_matched_df(
@@ -482,7 +312,7 @@ def rescore_and_update_filtered_scores(
 def combine_matched_unmatched(
     dfs_to_merge: Tuple[pd.DataFrame, pd.DataFrame],
     filtered_scores_f: Dict[Tuple[int, int], float],
-    save_csv: bool = False
+    save_csv: bool = False,
 ) -> pd.DataFrame:
     """
     Combine matched DataFrames and handle unmatched rows.
@@ -502,13 +332,17 @@ def combine_matched_unmatched(
 
     # Extract matched rows
     matched_rows_base = df_base.loc[matched_base_indices].reset_index(drop=True)
-    matched_rows_populate = df_populate.loc[matched_populate_indices].reset_index(drop=True)
+    matched_rows_populate = df_populate.loc[matched_populate_indices].reset_index(
+        drop=True
+    )
 
     # Combine matched rows side by side
     matched_df = pd.concat(
         [
             matched_rows_base,
-            matched_rows_populate.drop(columns=matched_rows_base.columns, errors="ignore"),
+            matched_rows_populate.drop(
+                columns=matched_rows_base.columns, errors="ignore"
+            ),
         ],
         axis=1,
     )
@@ -516,14 +350,28 @@ def combine_matched_unmatched(
 
     # Identify unmatched rows and assign NaN for missing columns
     unmatched_rows_base = df_base.loc[~df_base.index.isin(matched_base_indices)]
-    unmatched_rows_populate = df_populate.loc[~df_populate.index.isin(matched_populate_indices)]
+    unmatched_rows_populate = df_populate.loc[
+        ~df_populate.index.isin(matched_populate_indices)
+    ]
 
     # Combine matched and unmatched rows into the final DataFrame
     final_combined_df = pd.concat(
         [
             matched_df,
-            unmatched_rows_base.assign(**{col: None for col in df_populate.columns if col not in unmatched_rows_base.columns}),
-            unmatched_rows_populate.assign(**{col: None for col in df_base.columns if col not in unmatched_rows_populate.columns}),
+            unmatched_rows_base.assign(
+                **{
+                    col: None
+                    for col in df_populate.columns
+                    if col not in unmatched_rows_base.columns
+                }
+            ),
+            unmatched_rows_populate.assign(
+                **{
+                    col: None
+                    for col in df_base.columns
+                    if col not in unmatched_rows_populate.columns
+                }
+            ),
         ],
         ignore_index=True,
     )
@@ -532,7 +380,7 @@ def combine_matched_unmatched(
     final_combined_df["conf_values"].fillna(0, inplace=True)
 
     if save_csv:
-        final_combined_df.to_csv('final_combined_df.csv', index=False)
+        final_combined_df.to_csv("final_combined_df.csv", index=False)
 
     return final_combined_df
 
@@ -566,8 +414,12 @@ def combine_dfs(
     threshold = (1 - tolerance) * 0.48
 
     # Get matching column entities
-    desc_of_tables = generate_fuzzy_match_description(df_base, df_populate, n_samples=2, verbose=False)
-    col_name_base, col_name_pop  = get_column_names(prompt, desc_of_tables, api_key, verbose=True)
+    desc_of_tables = generate_fuzzy_match_description(
+        df_base, df_populate, n_samples=2, verbose=False
+    )
+    col_name_base, col_name_pop = get_column_names(
+        prompt, desc_of_tables, api_key, verbose=True
+    )
 
     # Creating a mask based on the weight dict for the dataframes
     df_entries_base = df_base[list(base_weights.keys())]
@@ -603,7 +455,7 @@ def combine_dfs(
     final_combined_df = combine_matched_unmatched(
         dfs_to_merge=(df_base, df_populate),
         filtered_scores_f=filtered_scores_f,
-        save_csv=True
+        save_csv=False,
     )
     print("Merged dataframes!")
 
@@ -667,7 +519,11 @@ def enrich_dataframes(
 
 
 def merge_top_k(
-    prompt:str, df_ranked: dict, dict_weights: dict, api_key: str, args: argparse.Namespace
+    prompt: str,
+    df_ranked: dict,
+    dict_weights: dict,
+    api_key: str,
+    args: argparse.Namespace,
 ):
     """
     Merge top-ranked dataframes sequentially based on matching criteria and weighted values.
@@ -694,8 +550,13 @@ def merge_top_k(
         df_populate = df_ranked[table_name]
         pop_weights = dict_weights[table_name]
         df_combined, new_weights = combine_dfs(
-            prompt, df_base, df_populate, base_weights, pop_weights, 
-            tolerance=args.tolerance, api_key=api_key
+            prompt,
+            df_base,
+            df_populate,
+            base_weights,
+            pop_weights,
+            tolerance=args.tolerance,
+            api_key=api_key,
         )
 
         # Ensure that the rows actually do match, otherwise the dataframes are likely mismatched

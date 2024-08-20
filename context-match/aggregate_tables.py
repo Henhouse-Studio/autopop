@@ -1,15 +1,11 @@
 import json
 import argparse
-
-# from utils.fuzzy_matcher import *
-from utils.make_embeddings import *
-from utils.prompt_expansion import *
-from utils.fetch_table_notion import *
-from utils.compute_similarity import *
-from utils.entry_matcher import *
-from utils.prompt_to_openai import *
-from utils.verbosity import *
-from utils.seed_initializer import *
+from utils.seed_initializer import set_seed
+from utils.prompt_expansion import handle_prompt
+from utils.supress_warnings import suppress_warnings
+from utils.prompt_to_openai import get_relevant_columns
+from utils.entry_matcher import enrich_dataframes, merge_top_k
+from utils.fetch_table_notion import get_dataframes, score_dataframes
 
 
 # Execution
@@ -63,7 +59,9 @@ def aggregate_tables(
     df_enriched = enrich_dataframes(df_ranked, df_fact_ranked)
 
     # Merge the enriched dataframes
-    final_df = merge_top_k(df_enriched, dict_weights, OPENAI_TOKEN, args)
+    final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
+
+    # Cleanup the final table
     final_df.dropna(inplace=True)
 
     return final_df
@@ -71,4 +69,5 @@ def aggregate_tables(
 
 if __name__ == "__main__":
 
-    aggregate_tables("Get me a table of firms")
+    table = aggregate_tables("Get me a table of firms")
+    table.to_csv("final.csv")

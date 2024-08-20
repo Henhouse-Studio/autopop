@@ -1,4 +1,3 @@
-import sys
 import json
 import pprint
 import argparse
@@ -247,8 +246,8 @@ def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int 
     return fact_response
 
 
-def get_column_names(prompt: str, desc: str, api_key: str, 
-                     max_tokens: int = 200, verbose: bool = False
+def get_column_names(
+    prompt: str, desc: str, api_key: str, max_tokens: int = 200, verbose: bool = False
 ):
     """
     Get columns that represent names.
@@ -260,8 +259,8 @@ def get_column_names(prompt: str, desc: str, api_key: str,
     :return: A list of possible column that represent poeple names.
             And based on this prompt: "{prompt}",
     """
-    #TODO: Once we have a merged table, we are interested to match something else
-    
+    # TODO: Once we have a merged table, we are interested to match something else
+
     prompt = f"""{desc}\n,
             Based on these 2 Tables above, which pairs of column names could represent similar entities.
             Return only one pair.
@@ -273,14 +272,21 @@ def get_column_names(prompt: str, desc: str, api_key: str,
 
     # raise error
     if len(response) > 2:
-        print("Error: More than 2 columns are matched. Returning only 1 pair of columns.")
-        response = response[:2]   
+        print(
+            "Error: More than 2 columns are matched. Returning only 1 pair of columns."
+        )
+        response = response[:2]
 
     if verbose:
         print("From Table 1 and 2, these are the matched column names:", response)
     return response
 
-def conserve_names_of(prompt: str, entities: list, api_key: str, max_tokens: int = 200, 
+
+def conserve_names_of(
+    prompt: str,
+    entities: list,
+    api_key: str,
+    max_tokens: int = 200,
 ):
     """
     Get columns that represent names.

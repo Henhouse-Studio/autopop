@@ -2,9 +2,11 @@ import os
 import nltk
 import string
 import platform
-from nltk.corpus import wordnet, stopwords
-from nltk.tokenize import word_tokenize
 from utils.prompt_to_openai import *
+from nltk.tokenize import word_tokenize
+from nltk.corpus import wordnet, stopwords
+
+
 
 
 # Function to get NLTK data directory based on the operating system
@@ -68,8 +70,8 @@ def get_synonyms(word, max_synonyms=3):
 def handle_prompt(
     prompt,
     api_key: str,
-    expand_with_syn: bool,
-    expand_with_openAI: bool,
+    expand_with_syn: bool = False,
+    expand_with_openAI: bool = True,
     print_prompt: bool = False,
 ):
     """
@@ -129,6 +131,7 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     :param api_key: The OpenAI API key (str).
     :return: The enriched prompt (str).
     """
+
     prompt = (
         original_prompt
         + """\n\nBased on the prompt above, return 5 columns that should be present in the database and 5 keywords to help search for the relevant tables. 
@@ -136,8 +139,7 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
     )
 
     response = prompt_openai(prompt=prompt, api_key=api_key, max_tokens=max_tokens)
-    response = sub("```python", "", response)
-    response = sub("```", "", response).replace("'", '"')
+    response = clean_output(response)
 
     # Check for empty response
     if not response:
@@ -164,6 +166,7 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
             else:
                 flattened_response.append(str(item))
         response = ", ".join(flattened_response)
+
     else:
         response = ", ".join(str(value) for value in response_json.values())
 

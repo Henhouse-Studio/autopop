@@ -24,6 +24,7 @@ def fuzzy_entry_rescorer(
             return 0
         # Calculate matching ratio
         matching_ratio = rapidfuzz.fuzz.QRatio(str1, str2)
+
         # Penalize confidence value if matching ratio is below the threshold
         if matching_ratio < threshold * 100:
             penalty = penalty_factor * (1 - matching_ratio / 100)

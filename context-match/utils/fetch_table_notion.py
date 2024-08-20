@@ -130,7 +130,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     if (
         os.path.exists(page_names_file)
         and os.path.exists(page_table_links_file)
-        and args.fetch_tables
+        and not args.fetch_tables
     ):
         # Load saved data
         page_names, page_table_links = load_data_pickle(
@@ -215,10 +215,6 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
 
                 desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
 
-        # # print(desc)
-        # field_embeddings = compute_embedding(desc)
-        # similarity_score = compute_similarity(prompt_embedding, field_embeddings)
-        # similarity_score = round(similarity_score * 100, 2)
         similarity_score = 0
 
         if is_fact:
@@ -238,19 +234,6 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
     relevant_fact_tables = rerank_dataframes(
         enriched_prompt, df_fact_dict, openai_token
     )
-
-    # Filter out the relevant tables from df_dict by the names
-    # df_ranked = {
-    #     table_name: value
-    #     for table_name, value in df_dict.items()
-    #     if table_name in relevant_tables
-    # }
-
-    # df_fact_ranked = {
-    #     table_name: value
-    #     for table_name, value in df_fact_dict.items()
-    #     if table_name in relevant_fact_tables
-    # }
 
     df_ranked = {}
     for table_name in relevant_tables:
