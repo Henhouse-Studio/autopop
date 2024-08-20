@@ -20,7 +20,6 @@ def save_chat(title, messages):
 
 
 def load_chats():
-
     chats = {}
     if os.path.exists(SAVE_FOLDER):
         for filename in os.listdir(SAVE_FOLDER):
@@ -28,7 +27,13 @@ def load_chats():
                 title = filename[:-5]  # Remove .json extension
                 file_path = os.path.join(SAVE_FOLDER, filename)
                 with open(file_path, "r") as f:
-                    chats[title] = json.load(f)
+                    try:
+                        # Try to load the JSON file
+                        chats[title] = json.load(f)
+                    except json.JSONDecodeError:
+                        # If there's an error (e.g., file is empty or malformed), log it and skip the file
+                        print(f"Warning: Skipping file '{filename}' due to JSONDecodeError.")
+                        continue
 
     return chats
 
