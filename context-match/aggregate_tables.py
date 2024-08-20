@@ -1,6 +1,6 @@
 import json
-import pandas as pd
 import argparse
+import pandas as pd
 from utils.seed_initializer import set_seed
 from utils.prompt_expansion import handle_prompt
 from utils.supress_warnings import suppress_warnings
@@ -17,15 +17,15 @@ def aggregate_tables(
     model_encoder: str = "all-MiniLM-L6-v2",
     fetch_tables: bool = False,
     temperature: float = 0.0,
-):      
-    # load csv to a dataframe
-    df = pd.read_csv("final_combined_df.csv")
+):
+    # # load csv to a dataframe
+    # df = pd.read_csv("final_combined_df.csv")
 
-    # drop the rows that have missing values from the df
-    df.dropna(inplace=True)
-    
-    # return the dataframe
-    return df
+    # # drop the rows that have missing values from the df
+    # df.dropna(inplace=True)
+
+    # # return the dataframe
+    # return df
 
     # return print("Your typed prompt is: ", prompt)
     # Collect all arguments into a dictionary, except for the 'prompt'

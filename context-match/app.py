@@ -9,9 +9,17 @@ from aggregate_tables import aggregate_tables
 
 if __name__ == "__main__":
 
+    # Page Configuration
+    st.set_page_config(
+        page_title="AutoPop Chat",
+        layout="wide",
+        page_icon=FAVICON_LOC,
+        initial_sidebar_state="auto",
+    )
+
     # Title Container
-    with st.container():
-        st.title("AutoPop ChatBot")
+    # with st.container():
+    #     st.title("AutoPop ChatBot")
 
     # Load the API keys
     with open(KEYFILE_LOC) as f:
@@ -64,7 +72,7 @@ if __name__ == "__main__":
                     st.rerun()
 
     # Main chat interface
-    st.subheader(f"{st.session_state.current_chat}")
+    st.subheader(f"{st.session_state.current_chat}", divider="gray")
 
     # Display previous messages
     for message in st.session_state.messages:
@@ -81,7 +89,6 @@ if __name__ == "__main__":
     prompt = (
         st.chat_input("Get me a table of...") if not default_prompt else default_prompt
     )
-    print(prompt)
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -158,5 +165,6 @@ if __name__ == "__main__":
 
     # Handle deletion rerun
     if st.session_state.delete_flag:
+
         st.session_state.delete_flag = False
         st.rerun()

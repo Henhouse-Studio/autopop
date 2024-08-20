@@ -33,8 +33,7 @@ For running the code, just do the following:
 ```
 
 # For the context-matcher
-cd context-match
-python main.py
+streamlit run context-match/app.py
 
 # For the image-matcher
 cd image-match
