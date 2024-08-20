@@ -1,11 +1,11 @@
-context-match/keys.json
 context-match/~
 context-match/out.csv
 context-match/locations_with_facts.csv
 
-# Ignore several things in image-match
+# Ignore several things in context-match
 image-match/images
 **/__pycache__
+**/keys.json
 .DS_Store
 context-match/llama3/
 
@@ -21,3 +21,9 @@ context-match/html_files_studylink/
 context-match/test.ipynb
 context-match/bin
 cdist.ipynb
+
+# Ignore several things in llamaindex
+llamaindex/old
+llamaindex/data
+llamaindex/utils/storage
+llamaindex/chat_logs

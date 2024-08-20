@@ -165,7 +165,8 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
             if is_fact:
 
-                if os.path.isfile(path_table) and args.fetch_tables:
+                if os.path.isfile(path_table) and not args.fetch_tables:
+
                     df = pd.read_csv(path_table)
 
                 else:
@@ -176,7 +177,8 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
                     df.to_csv(path_table, index=False)
 
             else:
-                if os.path.isfile(path_table) and args.fetch_tables:
+
+                if os.path.isfile(path_table) and not args.fetch_tables:
                     df = pd.read_csv(path_table)
 
                 else:
@@ -253,11 +255,10 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
     df_ranked = {}
     for table_name in relevant_tables:
         df_ranked[table_name] = df_dict[table_name]
-    
+
     df_fact_ranked = {}
     for table_name in relevant_fact_tables:
         df_fact_ranked[table_name] = df_fact_dict[table_name]
-
 
     print(f"Selecting Top-{len(relevant_tables)} tables:")
 
