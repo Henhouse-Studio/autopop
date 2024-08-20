@@ -166,7 +166,6 @@ def get_enriched_prompt(original_prompt: str, api_key: str, max_tokens: int = 25
             else:
                 flattened_response.append(str(item))
         response = ", ".join(flattened_response)
-
     else:
         response = ", ".join(str(value) for value in response_json.values())
 

@@ -459,6 +459,8 @@ def combine_dfs(
     )
     print("Merged dataframes!")
 
+    print("Merged dataframes!")
+    sys.exit()
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
 
