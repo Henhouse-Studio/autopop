@@ -1,50 +1,11 @@
 import json
+import pandas as pd
 import streamlit as st
 from openai import OpenAI
-import pandas as pd
 from utils.constants import *
 from utils.streamlit_utils import *
-import sys
-import os
-
-# Now you can import the aggregate_tables module
 from aggregate_tables import aggregate_tables
 
-def display_welcome_message():
-    st.markdown("""
-        ## 🤖 Welcome to AutoPop ChatBot!
-        
-        I am your assistant, here to help you with various tasks:
-        
-        - **Fetch and aggregate tables**: Just ask me to get a table of something!
-        - **General Questions**: Ask me anything else, and I'll try my best to assist.
-        
-        **How to use:**
-        - Type your request in the input box below.
-        - You can ask for a table by starting with "Get me a table of...".
-        - Or just chat with me to get started!
-        
-        ### What would you like to do today?
-        """)
-    if st.button("Get a table"):
-        prompt = "Get me a table of "
-        return prompt  # Pre-fill with a table request
-    return None
-
-def process_dataframe_query(prompt, df):
-    """Use OpenAI to translate the prompt into a DataFrame operation."""
-    # Construct a prompt to send to OpenAI to parse the user prompt into a Pandas command
-    openai_prompt = f"Given this DataFrame: {df}, Answer this query: '{prompt}'."
-    # Call OpenAI to interpret the user's query
-    response = client.chat.completions.create(
-        model=st.session_state["openai_model"],
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": openai_prompt},
-        ],
-    )
-    response = response.choices[0].message.content.strip()
-    return response
 
 if __name__ == "__main__":
 
@@ -74,7 +35,9 @@ if __name__ == "__main__":
     if "messages" not in st.session_state:
         st.session_state.messages = []
     else:
-        st.session_state.messages = st.session_state.chats.get(st.session_state.current_chat, [])
+        st.session_state.messages = st.session_state.chats.get(
+            st.session_state.current_chat, []
+        )
 
     # Sidebar for chat management
     with st.sidebar:
@@ -115,7 +78,9 @@ if __name__ == "__main__":
         default_prompt = None
 
     # Get the user's prompt
-    prompt = st.chat_input("Get me a table of...") if not default_prompt else default_prompt
+    prompt = (
+        st.chat_input("Get me a table of...") if not default_prompt else default_prompt
+    )
     print(prompt)
 
     if prompt:
@@ -137,7 +102,9 @@ if __name__ == "__main__":
                 with st.chat_message("assistant"):
                     st.dataframe(table_output)
 
-                st.session_state.messages.append({"role": "assistant", "content": "Displayed the requested table."})
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": "Displayed the requested table."}
+                )
             else:
                 with st.chat_message("assistant"):
                     st.markdown("No table was generated.")
@@ -147,7 +114,7 @@ if __name__ == "__main__":
             df = st.session_state.get("last_dataframe", None)
             if df is not None:
                 # Attempt to process the DataFrame query
-                response = process_dataframe_query(prompt, df)
+                response = process_dataframe_query(prompt, client, df)
                 st.dataframe(df)
             else:
                 response = "No DataFrame available for reference."

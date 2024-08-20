@@ -167,7 +167,6 @@ def generate_fuzzy_match_description(
     random_state: int = 42,
     verbose: bool = False,
 ):
-    
     """
     Generate a descriptive extract of two tables for fuzzy matching.
 
@@ -201,7 +200,7 @@ def generate_fuzzy_match_description(
         description += f"[{sample_value}] Entry\n"
         for col_name in col_names_populate:
             description += f"[Column Name]: {col_name}, [Value]: {sample_populate[col_name].values[sample_value]}\n"
-    
+
     if verbose:
         print(description)
 
@@ -459,8 +458,6 @@ def combine_dfs(
     )
     print("Merged dataframes!")
 
-    print("Merged dataframes!")
-    sys.exit()
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
 

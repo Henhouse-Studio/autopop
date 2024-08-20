@@ -3,10 +3,46 @@ import streamlit as st
 from utils.constants import *
 
 
-def load_css(file_name):
+def display_welcome_message():
+    st.markdown(
+        """
+        ## Welcome to the AutoPop ChatBot!
+        
+        I am your assistant, here to help you with various tasks:
+        
+        - **Fetch and aggregate tables**: Just ask me to get a table of something!
+        - **General Questions**: Ask me anything else, and I'll try my best to assist.
+        
+        **How to use:**
+        - Type your request in the input box below.
+        - You can ask for a table by starting with "Get me a table of...".
+        - Or just chat with me to get started!
+        
+        ### What would you like to do today?
+        """
+    )
+    if st.button("Get a table"):
+        prompt = "Get me a table of "
+        return prompt  # Pre-fill with a table request
 
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    return None
+
+
+def process_dataframe_query(prompt, client, df):
+    """Use OpenAI to translate the prompt into a DataFrame operation."""
+    # Construct a prompt to send to OpenAI to parse the user prompt into a Pandas command
+    openai_prompt = f"Given this DataFrame: {df}, Answer this query: '{prompt}'."
+    # Call OpenAI to interpret the user's query
+    response = client.chat.completions.create(
+        model=st.session_state["openai_model"],
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": openai_prompt},
+        ],
+    )
+    response = response.choices[0].message.content.strip()
+
+    return response
 
 
 def save_chat(title, messages):
@@ -32,7 +68,9 @@ def load_chats():
                         chats[title] = json.load(f)
                     except json.JSONDecodeError:
                         # If there's an error (e.g., file is empty or malformed), log it and skip the file
-                        print(f"Warning: Skipping file '{filename}' due to JSONDecodeError.")
+                        print(
+                            f"Warning: Skipping file '{filename}' due to JSONDecodeError."
+                        )
                         continue
 
     return chats
@@ -59,3 +97,9 @@ def generate_title(client, messages):
         max_tokens=10,
     )
     return response.choices[0].message.content.strip()
+
+
+def load_css(file_name):
+
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
