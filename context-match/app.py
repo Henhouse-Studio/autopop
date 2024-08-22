@@ -78,6 +78,11 @@ if __name__ == "__main__":
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+            
+            # Check if the message contains a DataFrame
+            if "dataframe" in message:
+                df = pd.DataFrame(message["dataframe"])
+                st.dataframe(df)
 
     # Display welcome message if no messages
     if not st.session_state.messages:
@@ -99,19 +104,23 @@ if __name__ == "__main__":
         # Check if the prompt is requesting a table
         if prompt.strip().lower().startswith("get me a table of"):
             # Call the aggregate-tables script
-            table_output = aggregate_tables(prompt)  # Assuming this returns a DataFrame
+            df = aggregate_tables(prompt)  # Assuming this returns a DataFrame
 
-            if table_output is not None:
+            if df is not None:
                 # Store the DataFrame in session state
-                st.session_state.last_dataframe = table_output
+                st.session_state.last_dataframe = df
+
+                # Store the DataFrame in the chat history
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "Here's the table you requested.",
+                    "dataframe": df.to_dict()  # Save the DataFrame as a dictionary
+                })
 
                 # Display the DataFrame to the user
                 with st.chat_message("assistant"):
-                    st.dataframe(table_output)
+                    st.dataframe(df)
 
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": "Displayed the requested table."}
-                )
             else:
                 with st.chat_message("assistant"):
                     st.markdown("No table was generated.")
@@ -121,13 +130,32 @@ if __name__ == "__main__":
             df = st.session_state.get("last_dataframe", None)
             if df is not None:
                 # Attempt to process the DataFrame query
-                response = process_dataframe_query(prompt, client, df)
-                st.dataframe(df)
-            else:
-                response = "No DataFrame available for reference."
+                response = process_dataframe_query(prompt, df)
 
-            if not response:
-                # General query handling with OpenAI's API
+                if isinstance(response, pd.DataFrame):
+                    # If the response is a DataFrame, update the chat history with it
+                    st.session_state.last_dataframe = response
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": "Here is the updated table based on your query:",
+                        "dataframe": response.to_dict()  # Save the updated DataFrame as a dictionary
+                    })
+
+                    with st.chat_message("assistant"):
+                        st.dataframe(response)
+
+                else:
+                    # Otherwise, treat the response as a text response
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": response
+                    })
+
+                    with st.chat_message("assistant"):
+                        st.markdown(response)
+            else:
+                # If no DataFrame exists, handle the query as a general text-based query
+                response = None
                 stream = client.chat_completions.create(
                     model=st.session_state["openai_model"],
                     messages=[
@@ -138,13 +166,11 @@ if __name__ == "__main__":
                 )
                 response = st.write_stream(stream)
 
-            with st.chat_message("assistant"):
-                if isinstance(response, pd.DataFrame):
-                    st.dataframe(response)
-                else:
+                with st.chat_message("assistant"):
                     st.markdown(response)
 
-            st.session_state.messages.append({"role": "assistant", "content": response})
+                st.session_state.messages.append({"role": "assistant", "content": response})
+
 
         # Auto-save and generate title for new chats
         if (
