@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from rapidfuzz import fuzz
 from notion_client import Client
+from utils.constants import *
 from utils.make_embeddings import *
 from utils.compute_similarity import *
 from utils.prompt_to_openai import *
@@ -88,8 +89,8 @@ def get_table_links_from_pages(notion, page_links):
 def save_data_pickle(
     page_names,
     page_table_links,
-    page_names_file="page_names.pkl",
-    page_table_links_file="page_table_links.pkl",
+    page_names_file: str = "page_names.pkl",
+    page_table_links_file: str = "page_table_links.pkl",
 ):
     with open(page_names_file, "wb") as f:
         pickle.dump(page_names, f)
@@ -101,7 +102,8 @@ def save_data_pickle(
 
 
 def load_data_pickle(
-    page_names_file="page_names.pkl", page_table_links_file="page_table_links.pkl"
+    page_names_file: str = "page_names.pkl",
+    page_table_links_file: str = "page_table_links.pkl",
 ):
     with open(page_names_file, "rb") as f:
         page_names = pickle.load(f)
@@ -110,10 +112,17 @@ def load_data_pickle(
         page_table_links = pickle.load(f)
 
     print(f"Data loaded from {page_names_file} and {page_table_links_file}")
+
     return page_names, page_table_links
 
 
-def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace):
+def get_dataframes(
+    notion_token: str,
+    database_id: str,
+    args: argparse.Namespace,
+    page_names_file: str = os.path.join(DATA_DIR, "page_names.pkl"),
+    page_table_links_file: str = os.path.join(DATA_DIR, "page_table_links.pkl"),
+):
     """
     Retrieve dataframes from Notion pages and store them locally if not already saved.
 
@@ -123,9 +132,6 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
     :return: A dictionary with table names as keys and pandas DataFrames as values.
     """
     print("Retrieving databases...")
-
-    page_names_file = "databases/table_of_tables/page_names.pkl"
-    page_table_links_file = "databases/table_of_tables/page_table_links.pkl"
 
     if (
         os.path.exists(page_names_file)
@@ -155,7 +161,7 @@ def get_dataframes(notion_token: str, database_id: str, args: argparse.Namespace
 
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
-        path_table = f"databases/table_of_tables/{table_name}.csv"
+        path_table = os.path.join(DATA_DIR, f"{table_name}.csv")
         print(f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'")
 
         for table in tables:
@@ -308,7 +314,7 @@ def score_fields(dfs_dict: dict, prompt_embedding: np.array):
         # append the similarity score to the dataframe
         dfs_dict.at[index, "similarity_score"] = similarity_score
 
-    dfs_dict.to_csv("databases/table_of_fields/table_of_fields.csv", index=False)
+    dfs_dict.to_csv(os.path.join(FIELD_DIR, "table_of_fields.csv"), index=False)
 
     return dfs_dict
 
