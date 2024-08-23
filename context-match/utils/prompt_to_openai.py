@@ -187,17 +187,18 @@ def rerank_dataframes(
                     to relevance in descending order (So the most relevant is at the 
                     beginning, and the least relevant at the end), and ensure that the 
                     names are indeed the titles present in the provided descriptions.
-                    Get me the table names as a Python list and nothing else.
                     Please ensure that the you select only the most directly related tables
                     according to the prompt (i.e., if the prompt is 'Get me a table of firms',
                     return only the table containing the company profiles. Likewise, if the prompt is
                     'Get me a table of employees and their blogposts', select only the employee
-                    table and the blogpost table)."""
+                    table and the blogpost table).
+                    Return all these names in a Python list and nothing else."""
 
         response = prompt_openai(prompt, api_key, max_tokens)
         response = clean_output(response)
         response_batches += response
 
+    print("response_batches", response_batches)
     response_list = json.loads(response_batches)  # .replace("'", '"')
 
     return response_list
