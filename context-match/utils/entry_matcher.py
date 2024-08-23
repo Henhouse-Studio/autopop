@@ -492,10 +492,10 @@ def enrich_dataframes(
     df_enriched = {}
     for key in df_ranked.keys():
 
-        df_base = df_ranked[key][1]
+        df_base = df_ranked[key][0]
         for key_fact in df_fact_ranked.keys():
 
-            df_populate = df_fact_ranked[key_fact][1]
+            df_populate = df_fact_ranked[key_fact][0]
 
             # Check for matching column names between the base and populate dataframes
             matching_columns = df_base.columns.intersection(df_populate.columns)

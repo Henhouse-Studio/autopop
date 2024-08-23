@@ -7,7 +7,7 @@ from utils.prompt_expansion import handle_prompt
 from utils.supress_warnings import suppress_warnings
 from utils.prompt_to_openai import get_relevant_columns
 from utils.entry_matcher import enrich_dataframes, merge_top_k
-from utils.fetch_table_notion import get_dataframes, score_dataframes
+from utils.fetch_table_notion import get_dataframes, main_sort_dataframes
 
 
 # Execution
@@ -60,7 +60,9 @@ def aggregate_tables(
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
 
     # Score each table how similar it is to the prompt
-    df_ranked, df_fact_ranked = score_dataframes(df_dict, enriched_prompt, OPENAI_TOKEN)
+    df_ranked, df_fact_ranked = main_sort_dataframes(
+        df_dict, enriched_prompt, OPENAI_TOKEN
+    )
 
     dict_weights = get_relevant_columns(
         prompt, df_ranked, OPENAI_TOKEN, args, verbose=True

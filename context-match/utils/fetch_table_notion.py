@@ -197,9 +197,11 @@ def get_dataframes(
     return df_dict
 
 
-def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
+def main_sort_dataframes(
+    dfs_dict: dict, enriched_prompt: str, openai_token: str, verbose: bool = True
+):
     """
-    Score each dataframe based on similarity to a prompt embedding.
+    Sort each dataframe based on how relevant they are to the prompt.
 
     :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
     :param enriched_prompt: The enriched prompt text (str).
@@ -218,22 +220,13 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
 
         for sample_value in range(len(sample)):
             for col_name in col_names:
-
                 desc += f"{col_name}: {sample[col_name].values[sample_value]}\n"
 
-        similarity_score = 0
-
         if is_fact:
-            df_fact_dict[table_name] = (similarity_score, df, desc)
+            df_fact_dict[table_name] = (df, desc)
 
         else:
-            df_dict[table_name] = (similarity_score, df, desc)
-
-    # Sorting the dictionary based on similarity score
-    df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1][0], reverse=True))
-    df_fact_dict = dict(
-        sorted(df_fact_dict.items(), key=lambda x: x[1][0], reverse=True)
-    )
+            df_dict[table_name] = (df, desc)
 
     # Names of the relevant tables based on prompt
     relevant_tables = rerank_dataframes(enriched_prompt, df_dict, openai_token)
@@ -241,27 +234,22 @@ def score_dataframes(dfs_dict: dict, enriched_prompt: str, openai_token: str):
         enriched_prompt, df_fact_dict, openai_token
     )
 
-    df_ranked = {}
-    for table_name in relevant_tables:
-        df_ranked[table_name] = df_dict[table_name]
+    df_ranked = {table_name: df_dict[table_name] for table_name in relevant_tables}
+    df_fact_ranked = {
+        table_name: df_fact_dict[table_name] for table_name in relevant_fact_tables
+    }
 
-    df_fact_ranked = {}
-    for table_name in relevant_fact_tables:
-        df_fact_ranked[table_name] = df_fact_dict[table_name]
+    # Print if verbose
+    if verbose:
+        print(f"Selecting Top-{len(relevant_tables)} tables:")
 
-    print(f"Selecting Top-{len(relevant_tables)} tables:")
+        for i, (key, _) in enumerate(df_ranked.items()):
+            print(f"[{i+1}]:", key)
 
-    # printing similarity score, name of df_ranked
-    for i, (key, _) in enumerate(df_ranked.items()):
+        print(f"\nSelecting Top-{len(relevant_fact_tables)} Fact tables:")
 
-        print(f"[{i+1}]:", key)
-
-    print(f"Selecting Top-{len(relevant_fact_tables)} Fact tables:")
-
-    # printing similarity score, name of df_ranked
-    for i, (key, _) in enumerate(df_fact_ranked.items()):
-
-        print(f"[{i+1}]:", key)
+        for i, (key, _) in enumerate(df_fact_ranked.items()):
+            print(f"[{i+1}]:", key)
 
     return df_ranked, df_fact_ranked
 

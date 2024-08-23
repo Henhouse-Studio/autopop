@@ -93,7 +93,9 @@ if __name__ == "__main__":
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
 
     # Score each table how similar it is to the prompt
-    df_ranked, df_fact_ranked = score_dataframes(df_dict, enriched_prompt, OPENAI_TOKEN)
+    df_ranked, df_fact_ranked = main_sort_dataframes(
+        df_dict, enriched_prompt, OPENAI_TOKEN
+    )
 
     dict_weights = get_relevant_columns(
         prompt, df_ranked, OPENAI_TOKEN, args, verbose=True

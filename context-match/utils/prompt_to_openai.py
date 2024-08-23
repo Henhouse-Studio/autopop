@@ -147,7 +147,8 @@ def rerank_dataframes(
 
     # Iterate through the dictionary
     for _, items in df_ranked.items():
-        desc += items[2] + "\n"
+
+        desc += items[1] + "\n"
 
         # count whether the desc as exceeded 24000 words
         if len(desc) > 24_000:
@@ -160,9 +161,9 @@ def rerank_dataframes(
         desc_batches.append(desc)
 
     for desc in desc_batches:
-        prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc}.\n
-                    Select only the most relevant tables and sort them according to relevance in descending order. That means the most relevant first (to the left) and the least relevant last (to the right)
-                    Select only the most relevant tables and sort them according to relevance in descending order. That means the most relevant first (to the left) and the least relevant last (to the right)
+        prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc}.
+                    Select only the most relevant tables and sort them according to relevance in descending order. 
+                    This means that the most relevant first (to the left) and the least relevant last (to the right).
                     Get me the table names as a Python list and nothing else.
                     If none of the tables are relevant, return an empty list."""
         response = prompt_openai(prompt, api_key, max_tokens)
@@ -194,7 +195,7 @@ def get_relevant_columns(
 
     print("\nGetting relevant columns...")
     dict_weights = {}
-    for table_name, (_, _, desc) in df_ranked.items():
+    for table_name, (_, desc) in df_ranked.items():
 
         prompt = f"""Based on this prompt:\n
                     {original_prompt}\n
