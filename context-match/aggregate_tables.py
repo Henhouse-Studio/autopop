@@ -1,6 +1,7 @@
 import json
 import argparse
 import pandas as pd
+from utils.constants import *
 from utils.seed_initializer import set_seed
 from utils.prompt_expansion import handle_prompt
 from utils.supress_warnings import suppress_warnings
@@ -40,7 +41,7 @@ def aggregate_tables(
 
     # Get the required keys from the JSON file
     # TODO: Make key loading more centralized
-    with open("keys.json") as f:
+    with open(KEYFILE_LOC) as f:
         dic_keys = json.load(f)
         NOTION_TOKEN = dic_keys["notion_token"]
         DATABASE_ID = dic_keys["database_id"]
