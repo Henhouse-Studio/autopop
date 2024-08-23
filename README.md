@@ -1,6 +1,9 @@
-# **AutoPop**
+# **AutoPop ChatBot 🤖**
 
-This repository is a chat-based database merging/retrieval system.
+This repository is a chat-based database merging/retrieval system which also can perform general LLM capabilities.
+
+![Image of the interface.](context-match/assets/screenshot.PNG)
+
 
 ## **Setup**
 
@@ -28,7 +31,11 @@ conda env create -f environment.yml
 
 ## **Running**
 
-For running the code, just do the following:
+For running the code, you ideally need some `.csv` files to use as a type of knowledge base. Due to the way this code currently functions, it acts more like a datasource which gets analyzed in-chat rather than a database query system. 
+
+Place all the files you want in `context-match/databases`.
+
+Then, just do the following:
 
 ```
 

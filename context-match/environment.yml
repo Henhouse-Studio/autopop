@@ -1,4 +1,4 @@
-# environment.yml
+# Environment.yml
 name: context-match
 dependencies:
   - numpy
