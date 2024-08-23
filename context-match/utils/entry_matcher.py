@@ -566,11 +566,18 @@ def merge_top_k(
             df_base = df_combined
             base_weights = new_weights
 
-    # Reorder columns to have 'conf_values' at the end
-    cols = [col for col in df_base.columns if col != 'conf_values'] + ['conf_values']
-    df_base = df_base[cols]
+    # Reorder columns to have 'conf_values' at the end (if merging did happen)
+    if "conf_values" in df_base.columns:
+        cols = [col for col in df_base.columns if col != "conf_values"] + [
+            "conf_values"
+        ]
+        df_base = df_base[cols]
 
-    # Rename columns in case there are similar names
-    final_df = rename_columns(df_base, api_key=api_key)
+        # Rename columns in case there are similar names
+        final_df = rename_columns(df_base, api_key=api_key)
+
+    else:
+
+        final_df = df_base
 
     return final_df

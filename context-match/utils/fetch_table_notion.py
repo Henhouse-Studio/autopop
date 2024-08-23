@@ -1,4 +1,5 @@
 import os
+import sys
 import pickle
 import notion_df
 import numpy as np
@@ -11,7 +12,7 @@ from utils.compute_similarity import *
 from utils.prompt_to_openai import *
 
 
-def get_table_notion(NOTION_TOKEN, DATABASE_URL):
+def get_table_notion(NOTION_TOKEN: str, DATABASE_URL: str):
     """
     Retrieve a table from Notion as a DataFrame.
 
@@ -25,7 +26,7 @@ def get_table_notion(NOTION_TOKEN, DATABASE_URL):
     return df
 
 
-def get_page_links(notion_client, database_id):
+def get_page_links(notion_client, database_id: str):
     """
     Get links to pages in a Notion database.
 
@@ -39,6 +40,8 @@ def get_page_links(notion_client, database_id):
 
     names = []
     links = []
+
+    # Get the page link via the Notion metadata
     for page in pages:
 
         flag_tag = False
@@ -58,7 +61,7 @@ def get_page_links(notion_client, database_id):
     return names, links
 
 
-def get_table_links_from_pages(notion, page_links):
+def get_table_links_from_pages(notion, page_links: list):
     """
     Get links to tables in each Notion page.
 
@@ -208,10 +211,12 @@ def main_sort_dataframes(
     :param openai_token: The token to access ChatGPT (str).
     :return: A tuple containing the sorted and fact dataframes (dict, dict).
     """
-    print("Scoring databases based on prompt...")
+    print("Selecting most relevant databases...")
 
-    df_dict = {}
+    df_dict_new = {}
     df_fact_dict = {}
+
+    # Generate a description for all databases
     for table_name, (is_fact, df) in dfs_dict.items():
 
         col_names = list(df.columns)
@@ -225,16 +230,15 @@ def main_sort_dataframes(
         if is_fact:
             df_fact_dict[table_name] = (df, desc)
 
-        else:
-            df_dict[table_name] = (df, desc)
+        df_dict_new[table_name] = (df, desc)
 
     # Names of the relevant tables based on prompt
-    relevant_tables = rerank_dataframes(enriched_prompt, df_dict, openai_token)
+    relevant_tables = rerank_dataframes(enriched_prompt, df_dict_new, openai_token)
     relevant_fact_tables = rerank_dataframes(
-        enriched_prompt, df_fact_dict, openai_token
+        enriched_prompt, df_fact_dict, openai_token, is_fact=True
     )
 
-    df_ranked = {table_name: df_dict[table_name] for table_name in relevant_tables}
+    df_ranked = {table_name: df_dict_new[table_name] for table_name in relevant_tables}
     df_fact_ranked = {
         table_name: df_fact_dict[table_name] for table_name in relevant_fact_tables
     }
@@ -252,109 +256,3 @@ def main_sort_dataframes(
             print(f"[{i+1}]:", key)
 
     return df_ranked, df_fact_ranked
-
-
-# Currently Unused
-def get_top_k(dfs_dict_ranked: dict):
-    """
-    Get the top-k similar dataframes based on the similarity scores.
-
-    :param dfs_dict_ranked: A dictionary of dataframes ranked by similarity score (dict).
-    :return: The number of top-k similar dataframes (int).
-    """
-
-    data = [df[0] for df in dfs_dict_ranked.values()]
-    std_dev = np.std(data)
-
-    current_group = [data[0]]
-    top_k = 1
-
-    for i in range(1, len(data)):
-
-        if abs(data[i] - np.mean(current_group)) <= std_dev:
-            current_group.append(data[i])
-            top_k += 1
-
-        else:
-            break
-
-    return top_k
-
-
-# Currently Unused
-def score_fields(dfs_dict: dict, prompt_embedding: np.array):
-    """
-    Score each dataframe based on similarity to a prompt embedding.
-
-    :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
-    :param prompt_embedding: A numpy array representing the embedding of the prompt (np.array).
-    :return: A tuple containing the sorted and fact dataframes (dict, dict).
-    """
-    print("Scoring table of fields based on prompt...")
-
-    # iterate over each row from the dfs_dict
-    for index, row in dfs_dict.iterrows():
-
-        # compute similarity score with prompt embedding
-        similarity_score = compute_similarity(row["embedding"], prompt_embedding)
-        similarity_score = round(similarity_score * 100, 2)
-
-        # append the similarity score to the dataframe
-        dfs_dict.at[index, "similarity_score"] = similarity_score
-
-    dfs_dict.to_csv(os.path.join(FIELD_DIR, "table_of_fields.csv"), index=False)
-
-    return dfs_dict
-
-
-# Currently Unused
-def remove_duplicates(df: pd.DataFrame, threshold: float = 0.9):
-    """
-    Remove duplicate columns from a dataframe based on similarity threshold.
-
-    :param df: The pandas DataFrame to process.
-    :param threshold: The similarity threshold for considering columns as duplicates.
-    :return: A pandas DataFrame with duplicate columns removed.
-    """
-    # Convert threshold to a percentage for rapidfuzz
-    threshold = threshold * 100
-
-    # Create a set to keep track of columns to drop
-    columns_to_drop = set()
-    columns_to_rename = {}
-
-    colnames_df = list(df.columns)
-
-    # Iterate through columns to compare each with others
-    for i, col1 in enumerate(colnames_df):
-
-        if col1 in columns_to_drop:
-            continue
-
-        for col2 in colnames_df[i + 1 :]:
-
-            if col2 in columns_to_drop:
-                continue
-
-            # Calculate the similarity between column contents
-            str_col1 = " ".join([str(i) for i in df[col1]])
-            str_col2 = " ".join([str(i) for i in df[col2]])
-
-            similarity = fuzz.ratio(str_col1, str_col2)
-            if similarity >= threshold:
-                # If columns are similar, mark one for dropping
-                columns_to_drop.add(col2)
-                # Determine new name for the retained column
-                base_name = col1.split("_")[0] if "_" in col1 else col1
-                columns_to_rename[col1] = base_name
-
-    # Remove Score and ID columns too
-
-    # Drop the identified duplicate columns
-    # print("To drop:", columns_to_drop)
-    df = df.drop(columns=columns_to_drop, axis="columns")
-
-    # Rename columns to their base names
-    df = df.rename(columns=columns_to_rename)
-
-    return df

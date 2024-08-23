@@ -133,14 +133,22 @@ def get_names_columns(
 
 
 def rerank_dataframes(
-    original_prompt: str, df_ranked: dict, api_key: str, max_tokens: int = 200
+    original_prompt: str,
+    df_ranked: dict,
+    api_key: str,
+    max_tokens: int = 200,
+    is_fact: bool = False,
 ):
     """
-    Rerank the similar dataframes based on the prompt and description of the dataframes using ChatGPT.
+    Rerank the dataframes based on relevance to the prompt using ChatGPT.
 
-    :param prompt: The prompt to rerank the dataframes.
-    :param df_ranked: A dictionary of dataframes ranked by similarity score.
-    :return: The reranked dataframes.
+    :param original_prompt: The prompt text used to evaluate relevance (str).
+    :param df_ranked: A dictionary with table names as keys and tuples containing the DataFrame
+                      and its description as values (dict).
+    :param api_key: The API key to access ChatGPT (str).
+    :param max_tokens: The maximum number of tokens allowed in the ChatGPT response (int, default=200).
+    :param is_fact: A boolean indicating if the dataframes are fact tables, affecting the ranking criteria (bool, default=False).
+    :return: A list of table names ranked by their relevance to the original prompt (list).
     """
     desc_batches = []
     desc = ""
@@ -150,7 +158,7 @@ def rerank_dataframes(
 
         desc += items[1] + "\n"
 
-        # count whether the desc as exceeded 24000 words
+        # Check if the desc as exceeded 24000 words
         if len(desc) > 24_000:
             desc_batches.append(desc)
             desc = ""
@@ -161,16 +169,37 @@ def rerank_dataframes(
         desc_batches.append(desc)
 
     for desc in desc_batches:
-        prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc}.
-                    Select only the most relevant tables and sort them according to relevance in descending order. 
-                    This means that the most relevant first (to the left) and the least relevant last (to the right).
+
+        # The prompts required here needs to be robust
+        if is_fact:
+
+            prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc},
+                    Select the tables which are probably most helpful for enriching the
+                    context to match other tables with each other (i.e., linking a company to
+                    a person by a mutual connection), and ensure that the 
+                    names are indeed the titles present in the provided descriptions.
+                    Get me the table names as a Python list and nothing else."""
+
+        else:
+
+            prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc},
+                    Select only the most relevant table names and sort them according 
+                    to relevance in descending order (So the most relevant is at the 
+                    beginning, and the least relevant at the end), and ensure that the 
+                    names are indeed the titles present in the provided descriptions.
                     Get me the table names as a Python list and nothing else.
-                    If none of the tables are relevant, return an empty list."""
+                    Please ensure that the you select only the most directly related tables
+                    according to the prompt (i.e., if the prompt is 'Get me a table of firms',
+                    return only the table containing the company profiles. Likewise, if the prompt is
+                    'Get me a table of employees and their blogposts', select only the employee
+                    table and the blogpost table)."""
+
         response = prompt_openai(prompt, api_key, max_tokens)
         response = clean_output(response)
         response_batches += response
 
-    response_list = json.loads(response_batches.replace("'", '"'))
+    response_list = json.loads(response_batches)  # .replace("'", '"')
+
     return response_list
 
 
