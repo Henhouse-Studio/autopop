@@ -106,8 +106,8 @@ def process_dataframe_query(prompt, client, df):
     # Construct a prompt to send to OpenAI to parse the user prompt into a Pandas command
     openai_prompt = f"""Given this DataFrame: {df_serialized}, Answer this query: '{prompt}'.
         
-        If the query and DataFrame are unrelated, then just ignore the DataFrame and
-        answer the query as is."""
+                     If the query and DataFrame are unrelated, then just ignore the DataFrame and
+                     answer the query as is."""
 
     # Call OpenAI to interpret the user's query
     response = client.chat.completions.create(

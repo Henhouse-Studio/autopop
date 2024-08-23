@@ -240,7 +240,9 @@ def main_sort_dataframes(
 
     df_ranked = {table_name: df_dict_new[table_name] for table_name in relevant_tables}
     df_fact_ranked = {
-        table_name: df_fact_dict[table_name] for table_name in relevant_fact_tables
+        table_name: df_fact_dict[table_name]
+        for table_name in relevant_fact_tables
+        if table_name not in relevant_tables
     }
 
     # Print if verbose

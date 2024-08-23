@@ -250,33 +250,6 @@ def get_relevant_columns(
     return dict_weights
 
 
-# Unused
-def get_facts(df: pd.DataFrame, api_key: str, n_facts: int = 3, max_tokens: int = 50):
-    """
-    Generate a list of additional fact column names based on the provided dataframe.
-
-    :param df: The pandas DataFrame containing the data.
-    :param api_key: The OpenAI API key for authentication.
-    :param n_facts: The number of fact columns to generate.
-    :param max_tokens: The maximum number of tokens in the response.
-    :return: A string representing a list of suggested fact column names.
-    """
-    assert 0 < n_facts < 12, "Please request between 1 and 11 facts."
-
-    fact_get_prompt = f"""This is my data: 
-    
-    {df.head().to_string()}
-    
-    Based on this, come up with {n_facts} column names for additional facts about the data above. 
-    Return it as a Python list and nothing else."""
-
-    response = prompt_openai(fact_get_prompt, api_key, max_tokens)
-    fact_response = sub("```python", "", response)
-    fact_response = sub("```", "", fact_response)
-
-    return fact_response
-
-
 def get_column_names(
     prompt: str, desc: str, api_key: str, max_tokens: int = 200, verbose: bool = False
 ):
@@ -288,9 +261,7 @@ def get_column_names(
     :param max_tokens: The maximum number of tokens in the response.
     :param verbose: Whether to print the reponse (bool, default = False).
     :return: A list of possible column that represent poeple names.
-            And based on this prompt: "{prompt}",
     """
-    # TODO: Once we have a merged table, we are interested to match something else
 
     prompt = f"""{desc}\n,
             Based on these 2 Tables above, which pairs of column names could represent similar entities.
@@ -310,33 +281,6 @@ def get_column_names(
 
     if verbose:
         print("From Table 1 and 2, these are the matched column names:", response)
-    return response
-
-
-def conserve_names_of(
-    prompt: str,
-    entities: list,
-    api_key: str,
-    max_tokens: int = 200,
-):
-    """
-    Get columns that represent names.
-
-    :param prompt: The prompt to get the relevant columns.
-    :param entities: A list containing entities i.e company names, people names, etc.
-    :param api_key: The OpenAI API key for authentication.
-    :param max_tokens: The maximum number of tokens in the response.
-    :return: A list conserving the type items requested.
-    """
-
-    prompt = f"""Based on this prompt: {prompt}\n,
-            From this list: {entities}, conserve the items that refer only to the prompt,
-            Ensure that you only return the exact names from the list,
-            Return it as a Python list and nothing else."""
-
-    response = prompt_openai(prompt, api_key, max_tokens)
-    response = json.loads(clean_output(response))
-
     return response
 
 
