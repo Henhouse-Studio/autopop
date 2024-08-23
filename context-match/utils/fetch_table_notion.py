@@ -1,10 +1,7 @@
 import os
-import sys
 import pickle
 import notion_df
-import numpy as np
 import pandas as pd
-from rapidfuzz import fuzz
 from notion_client import Client
 from utils.constants import *
 from utils.make_embeddings import *

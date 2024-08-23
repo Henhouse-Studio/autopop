@@ -8,7 +8,9 @@ with open("keys.json") as f:
 
 from llama_index.core import TreeIndex, SimpleDirectoryReader
 
-resume = SimpleDirectoryReader("/home/gregorygo/autopop/llamaindex/data").load_data()
+resume = SimpleDirectoryReader(
+    "/home/gregorygo/autopop/context-match/databases/table_of_tables"
+).load_data()
 new_index = TreeIndex.from_documents(resume)
 
 query_engine = new_index.as_query_engine()

@@ -75,6 +75,7 @@ def delete_chat(title):
     file_path = os.path.join(SAVE_FOLDER, f"{title}.json")
     if os.path.exists(file_path):
         os.remove(file_path)
+
     del st.session_state.chats[title]
 
     if st.session_state.current_chat == title:
@@ -108,6 +109,8 @@ def process_dataframe_query(prompt, client, df):
         
                      If the query and DataFrame are unrelated, then just ignore the DataFrame and
                      answer the query as is."""
+
+    # Potential TODO: Link method of merging to explanation (to explain probabilities)
 
     # Call OpenAI to interpret the user's query
     response = client.chat.completions.create(
@@ -154,7 +157,7 @@ def initialize_session_state():
 
 
 def render_sidebar():
-    """Render the chat management sidebar."""
+    """Render the chat management sidebar with a rename function."""
     with st.sidebar:
         st.subheader("Conversations")
 
@@ -163,23 +166,43 @@ def render_sidebar():
             st.session_state.messages = []
 
         for title in list(st.session_state.chats.keys()):
-            col1, col2 = st.columns([3, 1])
+            with st.expander(f"{title}", expanded=False):
+                col1, col2, col3 = st.columns([3, 2, 4])
 
-            with col1:
-                if st.button(title, key=f"open_{title}"):
-                    st.session_state.current_chat = title
-                    st.session_state.messages = st.session_state.chats[title]
+                with col1:
+                    if st.button(f"Open", key=f"open_{title}"):
+                        st.session_state.current_chat = title
+                        st.session_state.messages = st.session_state.chats[title]
 
-            with col2:
-                if st.button("🗑️", key=f"delete_{title}"):
-                    delete_chat(title)
-                    st.session_state.delete_flag = True
-                    st.rerun()
+                with col2:
+                    if st.button("🗑️", key=f"delete_{title}"):
+                        delete_chat(title)
+                        st.session_state.delete_flag = True
+                        st.rerun()
+
+                with col3:
+                    new_title = st.text_input(
+                        f"Rename", value=title, key=f"rename_{title}"
+                    )
+
+                    if new_title != title and new_title.strip() != "":
+                        # Rename chat in session state and on disk
+                        st.session_state.chats[new_title] = st.session_state.chats.pop(
+                            title
+                        )
+                        if st.session_state.current_chat == title:
+                            st.session_state.current_chat = new_title
+                        save_chat(new_title, st.session_state.chats[new_title])
+
+                        extension = ("." * ("." not in title)) + "json"
+                        os.remove(os.path.join(SAVE_FOLDER, f"{title}{extension}"))
+
+                        st.rerun()
 
 
 def display_chat_messages():
     """Display previous messages in the chat interface."""
-    st.subheader(f"{st.session_state.current_chat}")
+    st.subheader(st.session_state.current_chat, divider="gray")
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -277,15 +300,11 @@ def auto_save_chat(client):
         st.session_state.chats[new_title] = st.session_state.messages
         save_chat(new_title, st.session_state.messages)
 
-    if st.session_state.current_chat != "New Chat":
+        # Rerun the code
+        st.rerun()
+
+    elif st.session_state.current_chat != "New Chat":
         st.session_state.chats[st.session_state.current_chat] = (
             st.session_state.messages
         )
         save_chat(st.session_state.current_chat, st.session_state.messages)
-
-
-# Unused
-def load_css(file_name):
-
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
