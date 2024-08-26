@@ -136,9 +136,25 @@ def load_api_keys():
 
 def initialize_session_state():
     """Initialize Streamlit session state variables."""
+
+    # Arguments for aggregate_tables
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-4o-mini"
 
+    if "matching_threshold" not in st.session_state:
+        st.session_state["matching_threshold"] = 0.14  
+
+    if "tolerance" not in st.session_state:
+        st.session_state["tolerance"] = 0.1
+
+    if "model_encoder" not in st.session_state:
+        st.session_state["model_encoder"] = "all-MiniLM-L6-v2"
+
+    if "temperature" not in st.session_state:
+        st.session_state["temperature"] = 0.0
+
+
+    # Application state variables
     if "chats" not in st.session_state:
         st.session_state.chats = load_chats()
 
@@ -154,17 +170,37 @@ def initialize_session_state():
         st.session_state.messages = st.session_state.chats.get(
             st.session_state.current_chat, []
         )
+        
 
+    
 
 def render_sidebar():
     """Render the chat management sidebar with a rename function."""
     with st.sidebar:
-        st.subheader("Conversations")
 
-        if st.button("New Chat"):
-            st.session_state.current_chat = "New Chat"
-            st.session_state.messages = []
+        st.header("AutoPop Chat v1.0") 
 
+        # Create a row with two columns to house the buttons side by side
+        col1, col2 = st.columns([0.15, 0.9])
+
+        with col1:
+            # Add the "Go to Menu" button in the sidebar
+            if st.button("🏠", key="menu_button"):
+                st.session_state.page = None
+                st.rerun()
+
+        with col2:
+            # Add the "New Chat" button in the sidebar
+            if st.button("New Chat"):
+                st.session_state.current_chat = "New Chat"
+                st.session_state.messages = []
+                st.session_state.page = "Librarian" 
+                st.rerun()
+
+        # st.subheader("Conversations")
+
+        
+        # Display the list of previous chats
         for title in list(st.session_state.chats.keys()):
             with st.expander(f"{title}", expanded=False):
                 col1, col2, col3 = st.columns([3, 2, 4])
@@ -173,6 +209,8 @@ def render_sidebar():
                     if st.button(f"Open", key=f"open_{title}"):
                         st.session_state.current_chat = title
                         st.session_state.messages = st.session_state.chats[title]
+                        st.session_state.page = "Librarian"  # Redirect to Librarian page
+                        st.rerun()
 
                 with col2:
                     if st.button("🗑️", key=f"delete_{title}"):
@@ -200,9 +238,10 @@ def render_sidebar():
                         st.rerun()
 
 
+
 def display_chat_messages():
     """Display previous messages in the chat interface."""
-    st.subheader(st.session_state.current_chat, divider="gray")
+    # st.subheader(st.session_state.current_chat, divider="gray")
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -221,7 +260,13 @@ def process_prompt(prompt, client):
         st.write(prompt)
 
     if prompt.strip().lower().startswith("get me a table of"):
-        df = aggregate_tables(prompt)
+        df = aggregate_tables(
+            prompt,
+            matching_threshold=st.session_state["matching_threshold"],
+            tolerance=st.session_state["tolerance"],
+            model_encoder=st.session_state["model_encoder"],
+            temperature=st.session_state["temperature"]
+        )
 
         if df is not None:
             table_msg = "Sure! Here is the table you requested:"
@@ -243,6 +288,12 @@ def process_prompt(prompt, client):
 
     else:
         handle_text_based_query(prompt, client)
+
+    # If there is an uploaded DataFrame, use it
+    if "uploaded_dataframe" in st.session_state:
+        with st.chat_message("assistant"):
+            st.write("Here is the data you uploaded:")
+            st.dataframe(st.session_state.uploaded_dataframe)
 
 
 def handle_text_based_query(prompt, client):
@@ -308,3 +359,11 @@ def auto_save_chat(client):
             st.session_state.messages
         )
         save_chat(st.session_state.current_chat, st.session_state.messages)
+
+
+# Unused
+def load_css(file_name):
+
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
