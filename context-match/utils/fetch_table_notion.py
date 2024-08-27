@@ -246,12 +246,12 @@ def main_sort_dataframes(
     if verbose:
         print(f"Selecting Top-{len(relevant_tables)} tables:")
 
-        for i, (key, _) in enumerate(df_ranked.items()):
-            print(f"[{i+1}]:", key)
+        for i, (table_name, _) in enumerate(df_ranked.items()):
+            print(f"[{i+1}]:", table_name)
 
         print(f"\nSelecting Top-{len(relevant_fact_tables)} Fact tables:")
 
-        for i, (key, _) in enumerate(df_fact_ranked.items()):
-            print(f"[{i+1}]:", key)
+        for i, (table_name, _) in enumerate(df_fact_ranked.items()):
+            print(f"[{i+1}]:", table_name)
 
     return df_ranked, df_fact_ranked

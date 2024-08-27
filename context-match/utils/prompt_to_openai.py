@@ -178,7 +178,7 @@ def rerank_dataframes(
                     context to match other tables with each other (i.e., linking a company to
                     a person by a mutual connection), and ensure that the 
                     names are indeed the titles present in the provided descriptions.
-                    Get me the table names as a Python list and nothing else."""
+                    Return all these names in a Python list and nothing else."""
 
         else:
 
