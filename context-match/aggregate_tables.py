@@ -1,4 +1,5 @@
 import json
+import time
 import argparse
 import streamlit as st
 from utils.constants import *
@@ -98,6 +99,30 @@ def aggregate_tables(
         dict_weights = get_relevant_columns(
             prompt, df_ranked, OPENAI_TOKEN, args, verbose=True
         )
+
+       # Streamlit form
+        with st.form(key="danilo_form"):
+            st.header("Before that answer this question: ")
+            st.write("Do you like to work with Danilo? 👀")
+            response = st.radio(
+                label="Select your response:",
+                options=["Yes", "No"],
+            )
+
+            submit_button = st.form_submit_button(label="Submit Response")
+            if submit_button:
+                # Store the user's response in session state
+                st.session_state.user_selection = response
+                st.session_state.process_stage = "continue_next_stage"
+                if response == "Yes":
+                    st.success(f"🥳 Your response '{response}' has been recorded. 🫡")
+                    time.sleep(2)
+                elif response == "No":
+                    st.success(f"😰 Your response '{response}' has been recorded. 🫡")
+                    time.sleep(2)
+
+    
+    if st.session_state.process_stage == "continue_next_stage":
 
         progress.update("🔗 Adding additional context to the tables found...")
 
