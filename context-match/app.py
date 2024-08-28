@@ -274,7 +274,7 @@ def main():
         show_librarian()
 
     elif st.session_state.page == "Databases":
-        show_databases(data_dir="databases/table_of_tables/")
+        show_databases(data_dir=DATA_DIR)
 
     elif st.session_state.page == "Settings":
         show_settings()

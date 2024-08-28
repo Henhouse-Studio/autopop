@@ -1,9 +1,0 @@
-# environment.yml
-name: llamaindex
-dependencies:
-  - pip:
-      - streamlit 
-      - openai 
-      - llama-index 
-      - nltk
-      - langchain-community
