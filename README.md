@@ -2,7 +2,7 @@
 
 This repository is a chat-based database merging/retrieval system which also can perform general LLM capabilities.
 
-![Image of the interface.](context-match/assets/screenshot.PNG)
+![Image of the interface.](context-match/assets/images/screenshot.PNG)
 
 
 ## **Setup**
