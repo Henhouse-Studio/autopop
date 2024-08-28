@@ -10,3 +10,5 @@ STYLE_SETTINGS = os.path.join(dir_path, "assets/css/settings.css")
 # For database files
 DATA_DIR = os.path.join(dir_path, "databases/table_of_tables")
 FIELD_DIR = os.path.join(dir_path, "databases/table_of_fields")
+MERGED_DIR = os.path.join(dir_path, "databases/merged_cache.csv")
+SAVE_MERGE_DIR = os.path.join(dir_path, "databases/merge_cache")

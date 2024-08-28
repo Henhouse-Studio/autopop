@@ -261,6 +261,7 @@ def process_prompt(prompt, client):
 
         st.session_state.prompt = prompt
 
+        # Get the table
         df = aggregate_tables(
             prompt,
             matching_threshold=st.session_state["matching_threshold"],
@@ -273,7 +274,7 @@ def process_prompt(prompt, client):
 
             st.session_state.prompt = ""
 
-            table_msg = "Sure! Here is the table you requested:"
+            table_msg = "Here is the table you requested:"
             st.session_state.last_dataframe = df
             st.session_state.messages.append(
                 {

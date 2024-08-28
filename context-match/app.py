@@ -122,6 +122,7 @@ def show_databases(data_dir="path_to_data_dir"):
         except Exception as e:
             st.error(f"Error loading {selected_option}: {e}")
 
+
 def show_settings():
     """Display the settings page to configure the model and threshold."""
     st.title("Settings")
@@ -214,7 +215,7 @@ def show_settings():
 
 
 def main():
-    """Main function to run the Streamlit app."""
+    """Main function for running the Streamlit app."""
     st.set_page_config(
         page_title="AutoPop Chat",
         layout="wide",
@@ -228,6 +229,7 @@ def main():
     # Sidebar setup
     render_sidebar()
 
+    # Main Page setup
     if st.session_state.page is None:
 
         load_css(STYLE_MAIN)
@@ -240,28 +242,21 @@ def main():
             unsafe_allow_html=True,
         )
 
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        col1, col2, col3 = st.columns([1, 1, 1])
 
         with col1:
             if st.button("⚡️ Start", key="start_button", use_container_width=True):
-                st.session_state.page = "Start"
-                st.rerun()
-
-        with col2:
-            if st.button(
-                "📚 Librarian", key="librarian_button", use_container_width=True
-            ):
                 st.session_state.page = "Librarian"
                 st.rerun()
 
-        with col3:
+        with col2:
             if st.button(
                 "💾 Databases", key="databases_button", use_container_width=True
             ):
                 st.session_state.page = "Databases"
                 st.rerun()
 
-        with col4:
+        with col3:
             if st.button("⚙️ Settings", key="settings_button", use_container_width=True):
                 st.session_state.page = "Settings"
                 st.rerun()
