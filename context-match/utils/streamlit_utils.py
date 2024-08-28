@@ -133,11 +133,10 @@ def load_api_keys():
 def initialize_session_state():
     """Initialize Streamlit session state variables."""
 
+    # Arguments for navigation
     if "page" not in st.session_state:
         st.session_state.page = None
 
-    # st.write("Innitializing session state")
-    print("Innitializing session state")
     # Arguments for aggregate_tables
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-4o-mini"
@@ -201,8 +200,6 @@ def render_sidebar():
                 st.session_state.messages = []
                 st.session_state.page = "Librarian"
                 st.rerun()
-
-        # st.subheader("Conversations")
 
         # Display the list of previous chats
         for title in list(st.session_state.chats.keys()):

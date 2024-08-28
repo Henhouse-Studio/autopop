@@ -198,7 +198,6 @@ def rerank_dataframes(
         response = clean_output(response)
         response_batches += response
 
-    print("response_batches", response_batches)
     response_list = json.loads(response_batches)  # .replace("'", '"')
 
     return response_list
