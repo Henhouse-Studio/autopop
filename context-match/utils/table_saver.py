@@ -7,6 +7,17 @@ from utils.constants import *
 
 
 def save_dataframe(df: pd.DataFrame, df_collection: dict):
+    """
+    Save a DataFrame and record its reference in a CSV file.
+
+    This function saves the given DataFrame to a CSV file with a unique name
+    and logs this reference along with the names of the contributing DataFrames
+    in a separate CSV file.
+
+    :param df: The DataFrame to be saved (pd.DataFrame).
+    :param df_collection: A dictionary containing the DataFrames involved in the merge
+                          where keys are names of the DataFrames (dict).
+    """
 
     # Create the file name
     merge_name = f"{uuid.uuid4().hex}.csv"
@@ -37,6 +48,17 @@ def save_dataframe(df: pd.DataFrame, df_collection: dict):
 
 
 def check_merged_table(df_collection: dict):
+    """
+    Check if a merged DataFrame already exists based on the collection of DataFrame names.
+
+    This function reads a record of previously saved DataFrames and checks if a
+    merge with the given DataFrame names already exists. If it does, it loads and
+    returns the existing merged DataFrame.
+
+    :param df_collection: A dictionary containing the DataFrames involved in the merge
+                          where keys are names of the DataFrames (dict).
+    :return: The existing merged DataFrame if a match is found, otherwise None (pd.DataFrame or None).
+    """
 
     # Get the keys as a matching list and sort them
     entry = list(df_collection.keys())
@@ -77,5 +99,6 @@ def check_merged_table(df_collection: dict):
         merge_df = pd.read_csv(load_dir)
 
         return merge_df
+
     else:
         return None

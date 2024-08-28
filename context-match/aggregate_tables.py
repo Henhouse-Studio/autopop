@@ -1,6 +1,5 @@
 import json
 import argparse
-import pandas as pd
 import streamlit as st
 from utils.constants import *
 from utils.seed_initializer import set_seed
