@@ -1,5 +1,6 @@
 basic_notion==0.6.2
 notion_client==2.2.1
+torch<2.4.0
 requests
 pandas
 jupyter
@@ -16,5 +17,4 @@ pprintpp
 linktransformer
 streamlit
 openai
-llama-index
-langchain-community
+# langchain-community
