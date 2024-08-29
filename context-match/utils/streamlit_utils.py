@@ -133,11 +133,11 @@ def load_api_keys():
 def initialize_session_state():
     """Initialize Streamlit session state variables."""
 
-    # Arguments for navigation
+    # =========== Arguments for Navigation ===========
     if "page" not in st.session_state:
         st.session_state.page = None
 
-    # Arguments for aggregate_tables
+    # =========== Arguments for Settings ===========
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-4o-mini"
 
@@ -153,7 +153,7 @@ def initialize_session_state():
     if "temperature" not in st.session_state:
         st.session_state["temperature"] = 0.0
 
-    # Application state variables
+    # =========== Application State Variables ===========
     if "chats" not in st.session_state:
         st.session_state.chats = load_chats()
 
@@ -163,6 +163,7 @@ def initialize_session_state():
     if "delete_flag" not in st.session_state:
         st.session_state.delete_flag = False
 
+    # init prompt: no messages 
     if "messages" not in st.session_state:
         st.session_state.messages = []
     else:
@@ -170,7 +171,10 @@ def initialize_session_state():
             st.session_state.current_chat, []
         )
 
-    # Aggregation state variables
+    print("NEW")
+    print(st.session_state.messages)
+
+    # =========== Aggregation State Variables ===========
     if "prompt" not in st.session_state:
         st.session_state.prompt = ""
 
@@ -252,8 +256,10 @@ def display_chat_messages():
 
 def process_prompt(prompt, client):
     """Process the user's prompt and handle different types of queries."""
-    st.session_state.messages.append({"role": "user", "content": prompt})
 
+    # Save prompt to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    print(st.session_state.messages)
     with st.chat_message("user"):
         st.write(prompt)
 
@@ -283,20 +289,27 @@ def process_prompt(prompt, client):
                     "dataframe": df.to_dict(),
                 }
             )
+
+            # Showing thee table to user
             with st.chat_message("assistant"):
                 st.write(table_msg)
                 st.dataframe(df)
 
-        # else:
-        #     with st.chat_message("assistant"):
-        #         st.write("No table was generated.")
+
     else:
         handle_text_based_query(prompt, client)
 
 
 def handle_text_based_query(prompt, client):
     """Handle follow-up text-based queries that involve a DataFrame."""
+
+    # Get the last DataFrame to ask a question about it
     df = st.session_state.get("last_dataframe", None)
+
+    # Limit the number of messages to send to OpenAI
+    window_hisotry = int(round(len(st.session_state.messages) * 0.75))
+    messages_to_send = st.session_state.messages[-(window_hisotry * 2):]
+    prompt = messages_to_send
 
     if df is not None:
         response = process_dataframe_query(prompt, client, df)
@@ -310,6 +323,8 @@ def handle_text_based_query(prompt, client):
                     "dataframe": response.to_dict(),
                 }
             )
+
+            # Show the updated table to the user
             with st.chat_message("assistant"):
                 st.dataframe(response)
 

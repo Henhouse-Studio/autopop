@@ -51,65 +51,63 @@ def handle_start_stage(prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, pr
 
 def handle_user_selection_stage():
 
-    if len(st.session_state.df_ranked) < 3:
-        st.session_state.user_selection = st.session_state.df_ranked
-        st.session_state.process_stage = "continue_processing"
-    else:
-        st.session_state.checkbox_values = {
-            table_name: True for table_name in st.session_state.df_ranked.keys()
-        }
+    # if len(st.session_state.df_ranked) < 3:
+    #     st.session_state.user_selection = st.session_state.df_ranked
+    #     st.session_state.process_stage = "continue_processing"
+    # else:
+    st.session_state.checkbox_values = {
+        table_name: True for table_name in st.session_state.df_ranked.keys()
+    }
 
-        with st.form(key="table_selection_form"):
-            st.write("Please select the tables you want to merge:")
-            for table_name in st.session_state.df_ranked.keys():
-                st.session_state.checkbox_values[table_name] = st.checkbox(
-                    label=table_name,
-                    value=st.session_state.checkbox_values[table_name],
-                )
+    with st.form(key="table_selection_form"):
+        st.write("Please select the tables you want to merge:")
+        for table_name in st.session_state.df_ranked.keys():
+            st.session_state.checkbox_values[table_name] = st.checkbox(
+                label=table_name,
+                value=st.session_state.checkbox_values[table_name],
+            )
 
-            submit_button = st.form_submit_button(label="Submit Selection")
-            if submit_button:
-                st.session_state.user_selection = {
-                    k: v for k, v in st.session_state.checkbox_values.items() if v
-                }
-                st.session_state.form_submitted = True
-                st.session_state.process_stage = "continue_processing"
+        submit_button = st.form_submit_button(label="Submit Selection")
+        if submit_button:
+            st.session_state.user_selection = {
+                k: v for k, v in st.session_state.checkbox_values.items() if v
+            }
+            st.session_state.form_submitted = True
+            st.session_state.process_stage = "continue_processing"
 
 
 def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
 
     progress.update("🔍 Identifying relevant terms in the prompt...")
 
-    if len(st.session_state.df_ranked) > 1:
-        df_ranked = {
-            k: v
-            for k, v in st.session_state.df_ranked.items()
-            if k in st.session_state.user_selection
-        }
 
-        merged_df = check_merged_table(df_ranked)
-        if merged_df is not None:
+    df_ranked = {
+        k: v
+        for k, v in st.session_state.df_ranked.items()
+        if k in st.session_state.user_selection
+    }
+    st.session_state.df_ranked = df_ranked
 
-            progress.update("📧 Existing merge found! Retrieving...")
-            progress.update("✅ Finalizing the table...")
-            progress.finalize()
-            st.session_state.process_stage = "start"
-
-            return merged_df
-
-        else:
-            dict_weights = get_relevant_columns(
-                prompt, df_ranked, OPENAI_TOKEN, args, verbose=True
-            )
-            st.session_state.process_stage = "add_context"
-
-            return dict_weights
+    merged_df = check_merged_table(df_ranked)
+    if merged_df is not None:
+        st.write("Returning cached table...")
+        progress.update("📧 Existing merge found! Retrieving...")
+        progress.update("✅ Finalizing the table...")
+        progress.finalize()
+        st.session_state.process_stage = "start"
+        
+        return merged_df
 
     else:
-        dict_weights = {}
+        dict_weights = get_relevant_columns(
+            prompt, df_ranked, OPENAI_TOKEN, args, verbose=True
+        )
         st.session_state.process_stage = "add_context"
-        
+
+        print(dict_weights)
         return dict_weights
+
+        
 
 
 def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights):
@@ -119,21 +117,21 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
         st.session_state.df_ranked, st.session_state.df_fact_ranked
     )
 
-    if len(st.session_state.df_ranked) < 2:
-        final_df = st.session_state.df_ranked[next(iter(st.session_state.df_ranked))][0]
-        progress.update("✅ Finished processing!")
+    # if len(st.session_state.df_ranked) < 2:
+    #     final_df = st.session_state.df_ranked[next(iter(st.session_state.df_ranked))][0]
+    #     progress.update("✅ Finished processing!")
 
-    else:
-        progress.update(
-            "🛠️ Merging tables...",
-            "<span style='color:gray; font-size:0.9em;'>**Note:** this may take a while depending on the size of the tables.</span>",
-        )
-        final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
-        progress.update("✅ Finalizing the table...")
+    # else:
+    progress.update(
+        "🛠️ Merging tables...",
+        "<span style='color:gray; font-size:0.9em;'>**Note:** this may take a while depending on the size of the tables.</span>",
+    )
+    final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
+    progress.update("✅ Finalizing the table...")
 
-        # Clean up and save the result
-        final_df.dropna(inplace=True)
-        save_dataframe(final_df, st.session_state.df_ranked)
+    # Clean up and save the result
+    final_df.dropna(inplace=True)
+    save_dataframe(final_df, st.session_state.df_ranked)
 
     progress.finalize()
     st.session_state.process_stage = "start"
