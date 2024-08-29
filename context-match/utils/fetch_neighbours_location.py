@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
+
 def fetch_neighboring_municipalities(url):
     def get_names(soup):
         # Find the table with neighboring municipalities by looking for the header text
@@ -17,8 +18,10 @@ def fetch_neighboring_municipalities(url):
         if table:
             links = table.find_all("a")
             for link in links:
-                if 'title' in link.attrs and 'Vlag' not in link.attrs['title']:  # Exclude entries with 'Vlag'
-                    name = link.attrs['title'].replace(" (gemeente)", "")
+                if (
+                    "title" in link.attrs and "Vlag" not in link.attrs["title"]
+                ):  # Exclude entries with 'Vlag'
+                    name = link.attrs["title"].replace(" (gemeente)", "")
                     names.append(name)
         return names
 
@@ -29,12 +32,15 @@ def fetch_neighboring_municipalities(url):
 
     # If no names found, retry with modified URL
     if not names and "_(gemeente)" not in url:
-        modified_url = url.replace("wiki/", "wiki/").replace("#Aangrenzende_gemeenten", "_(gemeente)#Aangrenzende_gemeenten")
+        modified_url = url.replace("wiki/", "wiki/").replace(
+            "#Aangrenzende_gemeenten", "_(gemeente)#Aangrenzende_gemeenten"
+        )
         response = requests.get(modified_url)
         soup = BeautifulSoup(response.content, "html.parser")
         names = get_names(soup)
         url = modified_url
     return names, url
+
 
 # Get table with municipalities from Wikipedia
 table = pd.read_html("https://en.wikipedia.org/wiki/Municipalities_of_the_Netherlands")
@@ -42,8 +48,17 @@ table = pd.read_html("https://en.wikipedia.org/wiki/Municipalities_of_the_Nether
 df = table[3]
 df_deleted_rows = df.iloc[::2].reset_index(drop=True)
 df = df_deleted_rows.drop("Map", axis="columns")
-df.columns = ["Municipality", "CBS Code", "Province", "Population", "Population Density", "Land Area"]
-df = df.drop(["Population", "Population", "Population Density", "Land Area"], axis="columns")
+df.columns = [
+    "Municipality",
+    "CBS Code",
+    "Province",
+    "Population",
+    "Population Density",
+    "Land Area",
+]
+df = df.drop(
+    ["Population", "Population", "Population Density", "Land Area"], axis="columns"
+)
 
 # add to each municipality the neighboring municipalities
 for idx, row in df_deleted_rows.iterrows():
@@ -90,21 +105,20 @@ for idx, row in df_deleted_rows.iterrows():
 
     if "The_Hague" in name_municipality:
         name_municipality = "Den_Haag"
-    
+
     if "Wageningen" in name_municipality:
         name_municipality = "Wageningen" + "_(Nederland)"
-    
+
     if "Zwijndrecht" in name_municipality:
         name_municipality = "Zwijndrecht" + "_(Nederland)"
 
     url = f"https://nl.wikipedia.org/wiki/{name_municipality}#Aangrenzende_gemeenten"
     names, modified_url = fetch_neighboring_municipalities(url)
     # print(f"Neighboring Municipalities from {modified_url}:")
-    
+
     if names == []:
         print(f"Neighboring Municipalities from {modified_url}:")
         print(name_municipality)
 
     # add a new column to df with the neighboring municipalities
-    df.loc[idx, "Neighboring Municipalities"] = ', '.join(names)
-
+    df.loc[idx, "Neighboring Municipalities"] = ", ".join(names)

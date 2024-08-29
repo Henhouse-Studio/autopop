@@ -7,8 +7,6 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet, stopwords
 
 
-
-
 # Function to get NLTK data directory based on the operating system
 def get_nltk_data_dir():
 

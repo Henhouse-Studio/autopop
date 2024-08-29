@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+
 class ProgressTracker:
     def __init__(self, total_steps=5):
         """
@@ -10,6 +11,7 @@ class ProgressTracker:
         Parameters:
         - total_steps: The total number of steps in the process (int).
         """
+
         self.result_holder = st.empty()
         self.note_placeholder = st.empty()
         self.current_step = 0
@@ -18,11 +20,12 @@ class ProgressTracker:
     def update(self, step_description, note=""):
         """
         Updates the progress bar and displays the current progress status.
-        
+
         Parameters:
         - step_description: The description of the current step (str).
         - note: An optional note to display under the progress (str).
         """
+
         self.current_step += 1
         progress = self.current_step / self.total_steps
         with self.result_holder.container():
@@ -35,5 +38,6 @@ class ProgressTracker:
 
     def finalize(self):
         """Clears the progress bar and placeholders."""
+
         self.result_holder.empty()
         self.note_placeholder.empty()

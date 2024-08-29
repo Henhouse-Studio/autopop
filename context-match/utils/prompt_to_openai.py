@@ -192,7 +192,7 @@ def rerank_dataframes(
                     return only the table containing the company profiles. Likewise, if the prompt is
                     'Get me a table of employees and their blogposts', select only the employee
                     table and the blogpost table).
-                    Return all these names in a Python list and nothing else. Select at most 5."""
+                    Return all these names in a Python list and nothing else."""
 
         response = prompt_openai(prompt, api_key, max_tokens)
         response = clean_output(response)
