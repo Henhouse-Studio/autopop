@@ -24,7 +24,7 @@ def save_dataframe(df: pd.DataFrame, df_collection: dict):
 
     # Define the content of the new row
     base_names = list(df_collection.keys())
-    base_names.sort()
+    # base_names.sort()
     content = [
         "",
         "",
@@ -62,7 +62,7 @@ def check_merged_table(df_collection: dict):
 
     # Get the keys as a matching list and sort them
     entry = list(df_collection.keys())
-    entry.sort()
+    # entry.sort()
 
     # Ensure the rest of the columns are registered as NaN
     entry_full = [np.nan, np.nan, np.nan, np.nan, np.nan]

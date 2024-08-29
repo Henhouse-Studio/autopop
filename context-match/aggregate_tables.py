@@ -14,6 +14,7 @@ from utils.fetch_table_notion import get_dataframes, main_sort_dataframes
 
 
 def initialize_environment(args):
+
     set_seed()
     suppress_warnings()
     progress = ProgressTracker(total_steps=5)
@@ -107,6 +108,7 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
     else:
         dict_weights = {}
         st.session_state.process_stage = "add_context"
+        
         return dict_weights
 
 
