@@ -36,7 +36,7 @@ def save_dataframe(df: pd.DataFrame, df_collection: dict):
     content[: len(base_names)] = base_names
 
     # Save the reference to the file
-    with open(MERGED_DIR, "a") as f:
+    with open(MERGED_DIR, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(content)
 

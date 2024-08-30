@@ -417,7 +417,7 @@ def combine_dfs(
         df_base, df_populate, n_samples=2, verbose=False
     )
     col_name_base, col_name_pop = get_column_names(
-        prompt, desc_of_tables, api_key, verbose=True
+        prompt, desc_of_tables, api_key, verbose=False
     )
 
     # Creating a mask based on the weight dict for the dataframes
@@ -469,6 +469,7 @@ def enrich_dataframes(
     df_fact_ranked: dict,
     threshold: float = 0.7,
     model_encoder: str = "all-MiniLM-L6-v2",
+    verbose: bool = False,
 ):
     """
     Enrich dataframes by merging them with fact tables based on matching column names.
@@ -499,7 +500,7 @@ def enrich_dataframes(
 
             # Check for matching column names between the base and populate dataframes
             matching_columns = df_base.columns.intersection(df_populate.columns)
-            if matching_columns.empty:
+            if matching_columns.empty and verbose:
                 print(
                     f"No matching columns between '{key}' and '{key_fact}'. Skipping..."
                 )

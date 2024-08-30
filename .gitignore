@@ -6,6 +6,9 @@
 *.npy
 *.json
 
+# Exception for JSON to keep the command embeddings
+!context-match/assets/**/*.json
+
 # Ignore several things in context-match
 context-match/~
 context-match/bin

@@ -4,6 +4,8 @@ import streamlit as st
 from openai import OpenAI
 from utils.constants import *
 from aggregate_tables import aggregate_tables
+from utils.make_embeddings import compute_embedding
+from utils.compute_similarity import compute_similarity
 
 
 def display_welcome_message():
@@ -163,7 +165,7 @@ def initialize_session_state():
     if "delete_flag" not in st.session_state:
         st.session_state.delete_flag = False
 
-    # init prompt: no messages 
+    # init prompt: no messages
     if "messages" not in st.session_state:
         st.session_state.messages = []
     else:
@@ -171,8 +173,8 @@ def initialize_session_state():
             st.session_state.current_chat, []
         )
 
-    print("NEW")
-    print(st.session_state.messages)
+    # print("NEW")
+    # print(st.session_state.messages)
 
     # =========== Aggregation State Variables ===========
     if "prompt" not in st.session_state:
@@ -259,11 +261,29 @@ def process_prompt(prompt, client):
 
     # Save prompt to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
-    print(st.session_state.messages)
+    # print(st.session_state.messages)
     with st.chat_message("user"):
         st.write(prompt)
 
-    if prompt.strip().lower().startswith("get me a table of"):
+    # Check if the prompt is about retrieving a table
+    # (i.e., if it's similar to "Get me a table of" in the beginning or
+    # if it contains the phrase at all.)
+    cleaned_prompt = prompt.strip().lower()
+    words_in_list = cleaned_prompt.split()
+    words_to_take = len(words_in_list) if len(words_in_list) < 5 else 5
+    prompt_start = " ".join(cleaned_prompt.split()[:words_to_take])
+
+    # Get the command embeddings to compare with
+    with open(COMMAND_EMB) as f:
+        embeddings = json.load(f)
+
+    if "get me a table of" in cleaned_prompt or (
+        compute_similarity(
+            compute_embedding(prompt_start),
+            embeddings[st.session_state["model_encoder"]],
+        )
+        > 0.5
+    ):
 
         st.session_state.prompt = prompt
 
@@ -295,7 +315,6 @@ def process_prompt(prompt, client):
                 st.write(table_msg)
                 st.dataframe(df)
 
-
     else:
         handle_text_based_query(prompt, client)
 
@@ -308,7 +327,7 @@ def handle_text_based_query(prompt, client):
 
     # Limit the number of messages to send to OpenAI
     window_hisotry = int(round(len(st.session_state.messages) * 0.75))
-    messages_to_send = st.session_state.messages[-(window_hisotry * 2):]
+    messages_to_send = st.session_state.messages[-(window_hisotry * 2) :]
     prompt = messages_to_send
 
     if df is not None:

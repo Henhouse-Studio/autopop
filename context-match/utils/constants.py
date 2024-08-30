@@ -6,6 +6,7 @@ KEYFILE_LOC = os.path.join(dir_path, "keys.json")
 FAVICON_LOC = os.path.join(dir_path, "assets/images/henhouse.png")
 STYLE_MAIN = os.path.join(dir_path, "assets/css/main.css")
 STYLE_SETTINGS = os.path.join(dir_path, "assets/css/settings.css")
+COMMAND_EMB = os.path.join(dir_path, "assets/command_emb.json")
 
 # For database files
 DATA_DIR = os.path.join(dir_path, "databases/table_of_tables")

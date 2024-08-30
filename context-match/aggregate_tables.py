@@ -80,7 +80,6 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
 
     progress.update("🔍 Identifying relevant terms in the prompt...")
 
-
     df_ranked = {
         k: v
         for k, v in st.session_state.df_ranked.items()
@@ -95,19 +94,17 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
         progress.update("✅ Finalizing the table...")
         progress.finalize()
         st.session_state.process_stage = "start"
-        
+
         return merged_df
 
     else:
         dict_weights = get_relevant_columns(
-            prompt, df_ranked, OPENAI_TOKEN, args, verbose=True
+            prompt, df_ranked, OPENAI_TOKEN, args, verbose=False
         )
         st.session_state.process_stage = "add_context"
 
-        print(dict_weights)
+        # print(dict_weights)
         return dict_weights
-
-        
 
 
 def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights):
@@ -147,6 +144,7 @@ def aggregate_tables(
     fetch_tables: bool = False,
     temperature: float = 0.0,
 ):
+
     arguments = {k: v for k, v in locals().items() if k != "prompt"}
     args = argparse.Namespace(**arguments)
 

@@ -198,7 +198,7 @@ def get_dataframes(
 
 
 def main_sort_dataframes(
-    dfs_dict: dict, enriched_prompt: str, openai_token: str, verbose: bool = True
+    dfs_dict: dict, enriched_prompt: str, openai_token: str, verbose: bool = False
 ):
     """
     Sort each dataframe based on how relevant they are to the prompt.
