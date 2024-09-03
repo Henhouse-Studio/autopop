@@ -55,6 +55,9 @@ def handle_user_selection_stage():
         table_name: True for table_name in st.session_state.df_ranked.keys()
     }
 
+    if "show_form" not in st.session_state:
+        st.session_state.show_form = True
+
     if st.session_state.show_form:
 
         # The form for selecting which databases to include
@@ -119,7 +122,7 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
 
     progress.update("🔗 Adding additional context to the tables found...")
     df_enriched = enrich_dataframes(
-        st.session_state.df_ranked, st.session_state.df_fact_ranked
+        st.session_state.df_ranked, st.session_state.df_fact_ranked, verbose=True
     )
 
     # if len(st.session_state.df_ranked) < 2:

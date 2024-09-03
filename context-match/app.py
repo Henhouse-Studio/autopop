@@ -245,7 +245,7 @@ def main():
         col1, col2, col3 = st.columns([1, 1, 1])
 
         with col1:
-            if st.button("⚡️ Start", key="start_button", use_container_width=True):
+            if st.button("💬 Start", key="start_button", use_container_width=True):
                 st.session_state.page = "Librarian"
                 st.rerun()
 
