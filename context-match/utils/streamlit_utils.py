@@ -200,7 +200,7 @@ def render_sidebar():
         st.header("AutoPop Chat v1.0")
 
         # Create a row with two columns to house the buttons side by side
-        col1, col2 = st.columns([0.15, 0.9])
+        col1, col2 = st.columns([0.15, 0.85])
 
         with col1:
             # Add the "Go to Menu" button in the sidebar
@@ -257,6 +257,7 @@ def render_sidebar():
 
 
 def display_chat_messages():
+
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
@@ -378,6 +379,7 @@ def handle_text_based_query(prompt, client):
 
 def stream_openai_response(client):
     """Stream OpenAI response for non-DataFrame queries."""
+
     stream = client.chat.completions.create(
         model=st.session_state["openai_model"],
         messages=[
@@ -394,6 +396,7 @@ def stream_openai_response(client):
 
 def auto_save_chat(client):
     """Auto-save and generate a title for new chats."""
+
     if (
         st.session_state.current_chat == "New Chat"
         and len(st.session_state.messages) == 2
