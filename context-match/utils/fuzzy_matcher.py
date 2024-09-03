@@ -9,6 +9,7 @@ def fuzzy_entry_rescorer(
     Compare the entries between columns to see if they match and penalize
     the confidence scores accordingly if they don't.
     If one of the strings is empty, set the confidence score to 0.
+
     :param df: The dataframe containing the columns to match between.
     :param threshold: The threshold to detect the non-matches.
     :param penalty_factor: The factor by which to penalize the confidence score for mismatches.

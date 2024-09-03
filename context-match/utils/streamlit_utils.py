@@ -87,6 +87,8 @@ def generate_title(client, messages):
     Summarize the following chat in 8 words or less:\n\n{messages[0]['content']}\n{messages[1]['content']}.
 
     If 'get me a table' is in the start, focus on what type of table is being requested.
+
+    Do not include characters that are illegal for filenames.
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -106,7 +108,7 @@ def process_dataframe_query(prompt, client, df):
     openai_prompt = f"""Given this DataFrame: {df_serialized}, Answer this query: '{prompt}'.
         
                      If the query and DataFrame are unrelated, then just ignore the DataFrame and
-                     answer the query as is."""
+                     answer the query as is. Do not start with 'the answer to this query is...'."""
 
     # Potential TODO: Link method of merging to explanation (to explain probabilities)
 

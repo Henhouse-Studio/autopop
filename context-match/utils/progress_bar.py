@@ -1,5 +1,4 @@
 # utils/progress_utils.py
-
 import streamlit as st
 
 
@@ -8,8 +7,7 @@ class ProgressTracker:
         """
         Initializes the progress bar and placeholders.
 
-        Parameters:
-        - total_steps: The total number of steps in the process (int).
+        :param total_steps: The total number of steps in the process (int).
         """
 
         self.result_holder = st.empty()
@@ -21,9 +19,8 @@ class ProgressTracker:
         """
         Updates the progress bar and displays the current progress status.
 
-        Parameters:
-        - step_description: The description of the current step (str).
-        - note: An optional note to display under the progress (str).
+        :param step_description: The description of the current step (str).
+        :param note: An optional note to display under the progress (str).
         """
 
         self.current_step += 1
