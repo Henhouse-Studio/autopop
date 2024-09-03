@@ -1,12 +1,11 @@
 import os
 import pickle
+import argparse
 import notion_df
 import pandas as pd
 from notion_client import Client
 from utils.constants import *
-from utils.make_embeddings import *
-from utils.compute_similarity import *
-from utils.prompt_to_openai import *
+from utils.prompt_to_openai import rerank_dataframes
 
 
 def get_table_notion(NOTION_TOKEN: str, DATABASE_URL: str):

@@ -1,48 +1,57 @@
 import pandas as pd
 import streamlit as st
 from utils.constants import *
-from utils.streamlit_utils import *
+from utils.streamlit_utils import (
+    load_css,
+    load_api_keys,
+    process_prompt,
+    auto_save_chat,
+    render_sidebar,
+    display_chat_messages,
+    display_welcome_message,
+    initialize_session_state,
+)
 
 
 def show_librarian():
     # Load the OpenAI API
     client = load_api_keys()
-    
+
     # Check if progress bar is running and show the button
     if st.session_state.get("progress_running", False):
         if st.button("Show code" if not st.session_state.show_code else "Hide code"):
             st.session_state.show_code = not st.session_state.show_code
             # st.rerun()
-    
+
     # Create columns only if show_code is True
     if st.session_state.show_code:
         chat_col, code_col = st.columns([1, 1])
     else:
         chat_col = st.container()
-    
+
     with chat_col:
-        
+
         display_chat_messages()
 
         # Handle the prompting
-        default_prompt = (
-            display_welcome_message() if not st.session_state.messages else None
-        )
-        
+        # default_prompt = (
+        #     display_welcome_message() if not st.session_state.messages else None
+        # )
+
         # Handle the prompting
         prompt = st.chat_input("Get me a table of...")
-        
+
         if prompt:
             process_prompt(prompt, client)
             auto_save_chat(client)
         elif st.session_state.prompt != "":
             process_prompt(st.session_state.prompt, client)
             auto_save_chat(client)
-        
+
         if st.session_state.delete_flag:
             st.session_state.delete_flag = False
             st.rerun()
-    
+
     # Display code column only if show_code is True
     if st.session_state.show_code:
         with code_col:
@@ -50,6 +59,7 @@ def show_librarian():
                 st.write("Here's the code associated with this operation:")
                 code_content = open("code.txt").read()
                 st.code(code_content, language="python")
+
 
 def show_librarian_():
 
@@ -83,7 +93,7 @@ def show_librarian_():
     if st.session_state.get("progress_running", False):
         if st.button("Show code"):
             st.session_state.show_code = not st.session_state.get("show_code", False)
-    
+
     # Create columns if show_code is True
     if st.session_state.get("show_code", False):
         col1, col2 = st.columns([1, 1])

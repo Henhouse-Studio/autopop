@@ -1,10 +1,11 @@
 import os
 import nltk
+import json
 import string
 import platform
-from utils.prompt_to_openai import *
 from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet, stopwords
+from utils.prompt_to_openai import prompt_openai, clean_output
 
 
 # Function to get NLTK data directory based on the operating system

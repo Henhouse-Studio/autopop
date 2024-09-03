@@ -1,11 +1,12 @@
 import argparse
+import numpy as np
 import pandas as pd
 import linktransformer as lt
 from typing import Tuple, Dict
-from utils.fuzzy_matcher import *
-from utils.prompt_to_openai import *
-from utils.compute_similarity import *
-from utils.fetch_table_notion import *
+from utils.prompt_to_openai import get_column_names
+from utils.fetch_table_notion import rename_columns
+from utils.fuzzy_matcher import fuzzy_entry_rescorer
+from utils.compute_similarity import compute_similarity_entries_row
 
 
 def df_reweighting(df: pd.DataFrame, weights: dict):

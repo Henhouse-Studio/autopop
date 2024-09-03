@@ -2,9 +2,9 @@ import pprint
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from utils.make_embeddings import *
 from sentence_transformers import util
 from scipy.spatial.distance import cdist
+from utils.make_embeddings import compute_embedding
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
