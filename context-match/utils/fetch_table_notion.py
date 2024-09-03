@@ -122,14 +122,36 @@ def get_dataframes(
     args: argparse.Namespace,
     page_names_file: str = os.path.join(DATA_DIR, "page_names.pkl"),
     page_table_links_file: str = os.path.join(DATA_DIR, "page_table_links.pkl"),
+    verbose: bool = False,
 ):
     """
     Retrieve dataframes from Notion pages and store them locally if not already saved.
 
+    This function connects to a Notion database using the provided API token and database ID,
+    retrieves the relevant pages and table links, and processes them into pandas DataFrames.
+    If the data has been previously saved locally, it loads the data from pickle files to avoid
+    redundant API calls.
+
+    The function performs the following steps:
+    1. Checks if saved data files exist and loads them if available, unless `fetch_tables`
+       is set to True in `args`.
+    2. If saved data is not available, it initializes a Notion client, retrieves page names and
+       table links, and saves this data for future use.
+    3. For each table link, it checks if a corresponding CSV file exists locally:
+       - If the file exists and `fetch_tables` is False, it loads the DataFrame from the CSV file.
+       - If the file does not exist or `fetch_tables` is True, it fetches the table data from Notion
+         and saves it as a CSV file.
+    4. It organizes the tables into a dictionary with table names as keys and tuples containing
+       a boolean indicating if it is a "Fact" table and the corresponding DataFrame as values.
+
     :param notion_token: The Notion API token.
     :param database_id: The ID of the Notion database.
-    :param args: Argparser namespace containing the parameter 'fetch_tables'.
-    :return: A dictionary with table names as keys and pandas DataFrames as values.
+    :param args: Argparse namespace containing parameters, including 'fetch_tables'.
+    :param page_names_file: Path to the pickle file for storing page names (default: "page_names.pkl").
+    :param page_table_links_file: Path to the pickle file for storing page-table links (default: "page_table_links.pkl").
+    :param verbose: If True, prints detailed logs during execution (default: False).
+
+    :return: A dictionary with table names as keys and tuples of (is_fact, DataFrame) as values.
     """
     print("Retrieving databases...")
 
@@ -162,7 +184,8 @@ def get_dataframes(
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
         path_table = os.path.join(DATA_DIR, f"{table_name}.csv")
-        print(f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'")
+        if verbose:
+            print(f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'")
 
         for table in tables:
 
@@ -193,7 +216,9 @@ def get_dataframes(
 
             df_dict[table_name] = (is_fact, df)
 
-    print(f"[*] Number of databases found: {len(df_dict)}\n")
+    if verbose:
+        print(f"[*] Number of databases found: {len(df_dict)}\n")
+
     return df_dict
 
 

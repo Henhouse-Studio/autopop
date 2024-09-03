@@ -103,7 +103,6 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
         )
         st.session_state.process_stage = "add_context"
 
-        # print(dict_weights)
         return dict_weights
 
 
@@ -126,9 +125,12 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
     final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
     progress.update("✅ Finalizing the table...")
 
-    # Clean up and save the result
+    # Clean up the result
     final_df.dropna(inplace=True)
-    save_dataframe(final_df, st.session_state.df_ranked)
+
+    # Save it if there's more than one dataframe involved:
+    if len(st.session_state.df_ranked) > 1:
+        save_dataframe(final_df, st.session_state.df_ranked)
 
     progress.finalize()
     st.session_state.process_stage = "start"

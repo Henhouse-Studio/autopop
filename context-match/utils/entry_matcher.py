@@ -170,15 +170,13 @@ def generate_fuzzy_match_description(
     """
     Generate a descriptive extract of two tables for fuzzy matching.
 
-    Args:
-        df_base (pd.DataFrame): The base DataFrame to sample from.
-        df_populate (pd.DataFrame): The populate DataFrame to sample from.
-        base_sample_size (int): Number of samples to take from the base DataFrame. Default is 2.
-        populate_sample_size (int): Number of samples to take from the populate DataFrame. Default is 2.
-        random_state (int): Random state for reproducibility. Default is 42.
+    :param df_base (pd.DataFrame): The base DataFrame to sample from.
+    :param df_populate (pd.DataFrame): The populate DataFrame to sample from.
+    :param base_sample_size (int): Number of samples to take from the base DataFrame. Default is 2.
+    :param populate_sample_size (int): Number of samples to take from the populate DataFrame. Default is 2.
+    :param random_state (int): Random state for reproducibility. Default is 42.
 
-    Returns:
-        str: A formatted string representing a sample extract from both tables.
+    :return: A formatted string representing a sample extract from both tables.
     """
 
     # Sample and extract from df_base

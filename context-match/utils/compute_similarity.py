@@ -88,14 +88,23 @@ def compute_similarity_entries_row(
     df_base: pd.DataFrame, df_populate: pd.DataFrame, verbose: bool = False
 ):
     """
-    Compute the similarity scores between the rows of two dataframes.
+    Compute similarity scores between the rows of two dataframes.
 
-    :param df_base: The dataframe to enrich (pd.DataFrame).
-    :param df_populate: The dataframe used for enrichment (pd.DataFrame).
-    :param verbose: Whether to print the scores (bool, default = False).
-    :return softmax_scores_dict: The dict containing the similarity scores for matching (dict).
-    It has the following format: '(idx_df1, idx_df2): score' between all entries.
-    :return highest_similar_col_name: The column name used as the merging basis.
+    This function calculates the similarity between each row in `df_base` and each row in `df_populate`
+    by generating embeddings for the rows and then computing similarity scores between these embeddings.
+    The result is a dictionary where each key is a tuple representing a pair of row indices (from `df_base` and
+    `df_populate`), and the corresponding value is the similarity score between those rows.
+
+    The similarity scores are sorted primarily by the index of `df_base` and secondarily by the score in
+    descending order.
+
+    :param df_base: The dataframe to be enriched, containing the rows for which similarity needs to be computed (pd.DataFrame).
+    :param df_populate: The dataframe used for enrichment, containing the rows to compare against `df_base` (pd.DataFrame).
+    :param verbose: Whether to print the computed similarity scores (bool, default = False).
+
+    :return: A dictionary containing the similarity scores, with keys as tuples `(idx_df1, idx_df2)`
+             and values as similarity scores (float). The keys represent the row indices in `df_base`
+             and `df_populate`, respectively (dict).
     """
 
     # Compute embeddings for each row in the relevant columns of df_base and df_populate
