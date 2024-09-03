@@ -296,6 +296,9 @@ def process_prompt(prompt, client):
     ):
 
         st.session_state.prompt = prompt
+        
+        # Set progress bar running state to True
+        st.session_state.progress_running = True
 
         # Get the table
         df = aggregate_tables(
@@ -316,6 +319,12 @@ def process_prompt(prompt, client):
         #             st.code(code_content, language="python")
         #             if st.button("Close"):
         #                 st.session_state.right_column_visible = False
+
+
+        # Check if progress bar is running and show the button
+        if st.session_state.get("progress_running", False):
+            if st.button("Show code" if not st.session_state.show_code else "Hide code"):
+                st.session_state.show_code = not st.session_state.show_code
         
         if df is not None:
 

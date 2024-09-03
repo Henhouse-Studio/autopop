@@ -16,34 +16,38 @@ from utils.streamlit_utils import (
 def show_librarian():
     # Load the OpenAI API
     client = load_api_keys()
-
-    # Check if progress bar is running and show the button
-    if st.session_state.get("progress_running", False):
-        if st.button("Show code" if not st.session_state.show_code else "Hide code"):
-            st.session_state.show_code = not st.session_state.show_code
-            # st.rerun()
-
+    
     # Create columns only if show_code is True
     if st.session_state.show_code:
         chat_col, code_col = st.columns([1, 1])
+
+        # Display the code in a static, non-scrolling container
+        with code_col:
+            st.subheader("Code")
+            code_container = st.container()
+            with code_container:
+                code_content = open("code.txt").read()
+                st.code(code_content, language="python")
+
     else:
         chat_col = st.container()
-
+    
     with chat_col:
-
+        # Avoid duplicating the sidebar, only call render_sidebar once in the main function
         display_chat_messages()
 
         # Handle the prompting
-        # default_prompt = (
-        #     display_welcome_message() if not st.session_state.messages else None
-        # )
-
-        # Handle the prompting
-        prompt = st.chat_input("Get me a table of...")
+        default_prompt = (
+            display_welcome_message() if not st.session_state.messages else None
+        )
+        prompt = (
+            st.chat_input("Get me a table of...") if not default_prompt else default_prompt
+        )
 
         if prompt:
             process_prompt(prompt, client)
             auto_save_chat(client)
+
         elif st.session_state.prompt != "":
             process_prompt(st.session_state.prompt, client)
             auto_save_chat(client)
@@ -52,13 +56,6 @@ def show_librarian():
             st.session_state.delete_flag = False
             st.rerun()
 
-    # Display code column only if show_code is True
-    if st.session_state.show_code:
-        with code_col:
-            with st.expander("Code", expanded=True):
-                st.write("Here's the code associated with this operation:")
-                code_content = open("code.txt").read()
-                st.code(code_content, language="python")
 
 
 def show_librarian_():
@@ -67,7 +64,7 @@ def show_librarian_():
     client = load_api_keys()
 
     # Avoid duplicating the sidebar, only call render_sidebar once in the main function
-    display_chat_messages()
+    # display_chat_messages()
 
     # Handle the prompting
     default_prompt = (
@@ -108,6 +105,33 @@ def show_librarian_():
     else:
         display_chat_messages()
 
+def show_librarian_v2():
+
+    # Load the OpenAI API
+    client = load_api_keys()
+
+    # Avoid duplicating the sidebar, only call render_sidebar once in the main function
+    display_chat_messages()
+
+    # Handle the prompting
+    default_prompt = (
+        display_welcome_message() if not st.session_state.messages else None
+    )
+    prompt = (
+        st.chat_input("Get me a table of...") if not default_prompt else default_prompt
+    )
+
+    if prompt:
+        process_prompt(prompt, client)
+        auto_save_chat(client)
+
+    elif st.session_state.prompt != "":
+        process_prompt(st.session_state.prompt, client)
+        auto_save_chat(client)
+
+    if st.session_state.delete_flag:
+        st.session_state.delete_flag = False
+        st.rerun()    
 
 def show_databases(data_dir="path_to_data_dir"):
 
