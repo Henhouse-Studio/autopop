@@ -17,6 +17,50 @@ def show_librarian():
     # Load the OpenAI API
     client = load_api_keys()
     
+    if st.session_state.show_code:
+        chat_col, code_col = st.columns([1, 1])
+        
+        with chat_col:
+            # Display chat messages here
+            display_chat_messages()
+        
+        with code_col:
+            st.subheader("Code")
+            code_content = open("code.txt").read()
+            st.code(code_content, language="python")
+
+    else:
+        # If show_code is False, only show chat
+        chat_col = st.container()
+        with chat_col:
+            display_chat_messages()
+    
+    # Handle the prompting
+    default_prompt = (
+        display_welcome_message() if not st.session_state.messages else None
+    )
+    prompt = (
+        st.chat_input("Get me a table of...") if not default_prompt else default_prompt
+    )
+
+    if prompt:
+        process_prompt(prompt, client)
+        auto_save_chat(client)
+
+    elif st.session_state.prompt != "":
+        process_prompt(st.session_state.prompt, client)
+        auto_save_chat(client)
+
+    if st.session_state.delete_flag:
+        st.session_state.delete_flag = False
+        st.rerun()
+
+
+
+def show_librarian_3():
+    # Load the OpenAI API
+    client = load_api_keys()
+    
     # Create columns only if show_code is True
     if st.session_state.show_code:
         chat_col, code_col = st.columns([1, 1])

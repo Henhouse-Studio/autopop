@@ -4,7 +4,7 @@ import pandas as pd
 import linktransformer as lt
 from typing import Tuple, Dict
 from utils.prompt_to_openai import get_column_names
-from utils.fetch_table_notion import rename_columns
+from utils.prompt_to_openai import rename_columns
 from utils.fuzzy_matcher import fuzzy_entry_rescorer
 from utils.compute_similarity import compute_similarity_entries_row
 
