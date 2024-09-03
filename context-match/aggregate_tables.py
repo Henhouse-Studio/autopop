@@ -72,13 +72,19 @@ def handle_user_selection_stage():
 
             submit_button = st.form_submit_button(label="Submit Selection")
             if submit_button:
-                st.session_state.user_selection = {
+                selected_tables = {
                     k: v for k, v in st.session_state.checkbox_values.items() if v
                 }
-                st.session_state.form_submitted = True
-                st.session_state.process_stage = "continue_processing"
-                st.session_state.show_form = False  # Hide the form after submission
-                st.rerun()  # Force a rerun to update the UI immediately
+
+                if selected_tables:
+                    st.session_state.user_selection = selected_tables
+                    st.session_state.form_submitted = True
+                    st.session_state.process_stage = "continue_processing"
+                    st.session_state.show_form = False  # Hide the form after submission
+                    st.rerun()  # Force a rerun to update the UI immediately
+
+                else:
+                    st.warning("You must select at least one table to proceed.")
 
     else:
         st.write("Table selection completed. Processing...")
