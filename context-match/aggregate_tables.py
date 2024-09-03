@@ -164,7 +164,10 @@ def aggregate_tables(
     fetch_tables: bool = False,
     temperature: float = 0.0,
 ):
-
+    # Set progress bar running state to True
+    st.session_state.progress_running = True
+    
+    
     arguments = {k: v for k, v in locals().items() if k != "prompt"}
     args = argparse.Namespace(**arguments)
 

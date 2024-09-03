@@ -5,6 +5,53 @@ from utils.streamlit_utils import *
 
 
 def show_librarian():
+    # Load the OpenAI API
+    client = load_api_keys()
+    
+    # Check if progress bar is running and show the button
+    if st.session_state.get("progress_running", False):
+        if st.button("Show code" if not st.session_state.show_code else "Hide code"):
+            st.session_state.show_code = not st.session_state.show_code
+            # st.rerun()
+    
+    # Create columns only if show_code is True
+    if st.session_state.show_code:
+        chat_col, code_col = st.columns([1, 1])
+    else:
+        chat_col = st.container()
+    
+    with chat_col:
+        
+        display_chat_messages()
+
+        # Handle the prompting
+        default_prompt = (
+            display_welcome_message() if not st.session_state.messages else None
+        )
+        
+        # Handle the prompting
+        prompt = st.chat_input("Get me a table of...")
+        
+        if prompt:
+            process_prompt(prompt, client)
+            auto_save_chat(client)
+        elif st.session_state.prompt != "":
+            process_prompt(st.session_state.prompt, client)
+            auto_save_chat(client)
+        
+        if st.session_state.delete_flag:
+            st.session_state.delete_flag = False
+            st.rerun()
+    
+    # Display code column only if show_code is True
+    if st.session_state.show_code:
+        with code_col:
+            with st.expander("Code", expanded=True):
+                st.write("Here's the code associated with this operation:")
+                code_content = open("code.txt").read()
+                st.code(code_content, language="python")
+
+def show_librarian_():
 
     # Load the OpenAI API
     client = load_api_keys()
@@ -31,6 +78,25 @@ def show_librarian():
     if st.session_state.delete_flag:
         st.session_state.delete_flag = False
         st.rerun()
+
+    # Check if progress bar is running
+    if st.session_state.get("progress_running", False):
+        if st.button("Show code"):
+            st.session_state.show_code = not st.session_state.get("show_code", False)
+    
+    # Create columns if show_code is True
+    if st.session_state.get("show_code", False):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            display_chat_messages()
+        with col2:
+            with st.expander("Code", expanded=True):
+                st.write("Here's the code associated with this operation:")
+                code_content = open("code.txt").read()
+                st.code(code_content, language="python")
+
+    else:
+        display_chat_messages()
 
 
 def show_databases(data_dir="path_to_data_dir"):

@@ -141,6 +141,13 @@ def initialize_session_state():
     if "page" not in st.session_state:
         st.session_state.page = None
 
+    # Visibility of the right column
+    if "show_code" not in st.session_state:
+        st.session_state.show_code = False
+
+    if "progress_running" not in st.session_state:
+        st.session_state.progress_running = False   
+
     # =========== Arguments for Settings ===========
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-4o-mini"
@@ -298,6 +305,17 @@ def process_prompt(prompt, client):
             temperature=st.session_state["temperature"],
         )
 
+        # Display the "Click to open code" link
+        # if st.session_state.get("progress_running", False):
+
+        #     if st.session_state.right_column_visible:
+        #         with st.expander("Click to close code"):
+        #             st.write("Here's the code associated with this operation:")
+        #             code_content = open("code.txt").read()
+        #             st.code(code_content, language="python")
+        #             if st.button("Close"):
+        #                 st.session_state.right_column_visible = False
+        
         if df is not None:
 
             st.session_state.prompt = ""
