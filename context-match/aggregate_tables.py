@@ -51,29 +51,38 @@ def handle_start_stage(prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, pr
 
 def handle_user_selection_stage():
 
-    # if len(st.session_state.df_ranked) < 3:
-    #     st.session_state.user_selection = st.session_state.df_ranked
-    #     st.session_state.process_stage = "continue_processing"
-    # else:
     st.session_state.checkbox_values = {
         table_name: True for table_name in st.session_state.df_ranked.keys()
     }
 
-    with st.form(key="table_selection_form"):
-        st.write("Please select the tables you want to merge:")
-        for table_name in st.session_state.df_ranked.keys():
-            st.session_state.checkbox_values[table_name] = st.checkbox(
-                label=table_name,
-                value=st.session_state.checkbox_values[table_name],
-            )
+    if st.session_state.show_form:
 
-        submit_button = st.form_submit_button(label="Submit Selection")
-        if submit_button:
-            st.session_state.user_selection = {
-                k: v for k, v in st.session_state.checkbox_values.items() if v
-            }
-            st.session_state.form_submitted = True
-            st.session_state.process_stage = "continue_processing"
+        # The form for selecting which databases to include
+        with st.form(key="table_selection_form"):
+
+            st.write("Please select the tables you want to merge:")
+            for table_name in st.session_state.df_ranked.keys():
+                st.session_state.checkbox_values[table_name] = st.checkbox(
+                    label=table_name,
+                    value=st.session_state.checkbox_values.get(table_name, True),
+                )
+
+            submit_button = st.form_submit_button(label="Submit Selection")
+            if submit_button:
+                st.session_state.user_selection = {
+                    k: v for k, v in st.session_state.checkbox_values.items() if v
+                }
+                st.session_state.form_submitted = True
+                st.session_state.process_stage = "continue_processing"
+                st.session_state.show_form = False  # Hide the form after submission
+                st.rerun()  # Force a rerun to update the UI immediately
+
+    else:
+        st.write("Table selection completed. Processing...")
+
+    # Reset the form visibility when returning to the start stage
+    if st.session_state.process_stage == "start":
+        st.session_state.show_form = True
 
 
 def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
@@ -153,6 +162,9 @@ def aggregate_tables(
     progress, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN = initialize_environment(args)
 
     if st.session_state.process_stage == "start":
+
+        # For the form
+        st.session_state.show_form = True
         handle_start_stage(
             prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, progress
         )
