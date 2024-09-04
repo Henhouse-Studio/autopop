@@ -3,7 +3,7 @@ import streamlit as st
 
 
 class ProgressTracker:
-    def __init__(self, total_steps=5):
+    def __init__(self, total_steps: int = 5):
         """
         Initializes the progress bar and placeholders.
 
@@ -28,8 +28,10 @@ class ProgressTracker:
         with self.result_holder.container():
             st.progress(progress, f"Progress: {progress*100:.2f}%")
             st.markdown(step_description)
+
         if note:
             self.note_placeholder.markdown(note, unsafe_allow_html=True)
+
         else:
             self.note_placeholder.empty()
 
@@ -38,3 +40,43 @@ class ProgressTracker:
 
         self.result_holder.empty()
         self.note_placeholder.empty()
+
+
+class HistoryTracker:
+    def __init__(self):
+        """
+        Initializes the progress bar and placeholders.
+        """
+
+        st.session_state.process_history = ""
+
+    def update(self, text: str, verbose: bool = True):
+        """
+        Updates the progress bar and displays the current progress status.
+
+        :param text:
+        :param verbose:
+        """
+
+        if verbose:
+            print(text + "\n")
+
+        st.session_state.process_history += text + "\n"
+
+        with st.expander("Show process"):
+            st.write("Here's the output associated with this operation:")
+            code_content = st.session_state.process_history
+            st.code(code_content, language="python")
+
+    def finalize(self):
+        """Clears the progress bar and placeholders."""
+
+        st.session_state.process_history = ""
+
+
+def save_progress_text(text: str, verbose: bool = True):
+
+    if verbose:
+        print(text + "\n")
+
+    st.session_state.process_history += text + "\n"

@@ -4,8 +4,8 @@ import pandas as pd
 import streamlit as st
 from utils.constants import *
 from utils.seed_initializer import set_seed
-from utils.progress_bar import ProgressTracker
 from utils.prompt_expansion import handle_prompt
+from utils.progress_history import ProgressTracker
 from utils.supress_warnings import suppress_warnings
 from utils.prompt_to_openai import get_relevant_columns
 from utils.entry_matcher import enrich_dataframes, merge_top_k
@@ -33,7 +33,7 @@ def handle_start_stage(prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, pr
     enriched_prompt = handle_prompt(
         prompt,
         api_key=OPENAI_TOKEN,
-        print_prompt=True,
+        verbose=False,
         expand_with_syn=False,
         expand_with_openAI=True,
     )
@@ -128,7 +128,7 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
 
     progress.update("🔗 Adding additional context to the tables found...")
     df_enriched = enrich_dataframes(
-        st.session_state.df_ranked, st.session_state.df_fact_ranked, verbose=True
+        st.session_state.df_ranked, st.session_state.df_fact_ranked, verbose=False
     )
 
     # if len(st.session_state.df_ranked) < 2:
@@ -164,8 +164,8 @@ def aggregate_tables(
     fetch_tables: bool = False,
     temperature: float = 0.0,
 ):
-    # Set progress bar running state to True
-    st.session_state.progress_running = True
+    # # Set progress bar running state to True
+    # st.session_state.progress_running = True
 
     arguments = {k: v for k, v in locals().items() if k != "prompt"}
     args = argparse.Namespace(**arguments)

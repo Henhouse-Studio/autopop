@@ -5,6 +5,7 @@ from tqdm import tqdm
 from sentence_transformers import util
 from scipy.spatial.distance import cdist
 from utils.make_embeddings import compute_embedding
+from utils.progress_history import save_progress_text
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -101,7 +102,6 @@ def compute_similarity_entries_row(
     :param df_base: The dataframe to be enriched, containing the rows for which similarity needs to be computed (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment, containing the rows to compare against `df_base` (pd.DataFrame).
     :param verbose: Whether to print the computed similarity scores (bool, default = False).
-
     :return: A dictionary containing the similarity scores, with keys as tuples `(idx_df1, idx_df2)`
              and values as similarity scores (float). The keys represent the row indices in `df_base`
              and `df_populate`, respectively (dict).
@@ -126,9 +126,9 @@ def compute_similarity_entries_row(
         for key, value in similarity_scores.items()
     }
 
-    if verbose:
-        pprint.pprint(converted_scores)
-
-    print("Finished computing row similarities!\n")
+    save_progress_text(
+        f"{pprint.pformat(converted_scores)}\nFinished computing row similarities!",
+        verbose=verbose,
+    )
 
     return converted_scores

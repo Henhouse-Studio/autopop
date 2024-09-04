@@ -4,6 +4,7 @@ import uuid
 import numpy as np
 import pandas as pd
 from utils.constants import *
+from utils.progress_history import save_progress_text
 
 
 def save_dataframe(df: pd.DataFrame, df_collection: dict):
@@ -47,7 +48,7 @@ def save_dataframe(df: pd.DataFrame, df_collection: dict):
     print(f"Saved dataframe combination to {merge_name}!")
 
 
-def check_merged_table(df_collection: dict):
+def check_merged_table(df_collection: dict, verbose: bool = False):
     """
     Check if a merged DataFrame already exists based on the collection of DataFrame names.
 
@@ -57,6 +58,7 @@ def check_merged_table(df_collection: dict):
 
     :param df_collection: A dictionary containing the DataFrames involved in the merge
                           where keys are names of the DataFrames (dict).
+    :param verbose: If True, prints detailed logs during execution (default: False).
     :return: The existing merged DataFrame if a match is found, otherwise None (pd.DataFrame or None).
     """
 
@@ -92,7 +94,7 @@ def check_merged_table(df_collection: dict):
     matches = df_new.apply(row_matches, axis=1)
 
     if matches.any():
-        print("Existing entry found!")
+        save_progress_text("Existing entry found!", verbose=verbose)
         matching_index = matches.idxmax()  # Get the index of the first match
         merge_cache = df.at[matching_index, "df_name"]
         load_dir = os.path.join(SAVE_MERGE_DIR, merge_cache)

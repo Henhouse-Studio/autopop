@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 from re import sub
 from openai import OpenAI
+from utils.progress_history import save_progress_text
 
 
 def clean_output(response: str):
@@ -222,7 +223,7 @@ def get_relevant_columns(
     :return: A dictionary of relevant columns for each dataframe (dict).
     """
 
-    print("\nGetting relevant columns...")
+    save_progress_text("Getting relevant columns...", verbose=verbose)
     dict_weights = {}
     for table_name, (_, desc) in df_ranked.items():
 
@@ -243,9 +244,7 @@ def get_relevant_columns(
 
         dict_weights[table_name] = json.loads(clean_output(response))
 
-    # For printing
-    if verbose:
-        pprint.pprint(dict_weights)
+    save_progress_text(pprint.pformat(dict_weights), verbose=verbose)
 
     return dict_weights
 
@@ -274,13 +273,20 @@ def get_column_names(
 
     # raise error
     if len(response) > 2:
-        print(
-            "Error: More than 2 columns are matched. Returning only 1 pair of columns."
+
+        save_progress_text(
+            "Error: More than 2 columns are matched. Returning only 1 pair of columns.",
+            verbose=verbose,
         )
         response = response[:2]
 
     if verbose:
-        print("From Table 1 and 2, these are the matched column names:", response)
+
+        save_progress_text(
+            f"From Table 1 and 2, these are the matched column names: {response}",
+            verbose=verbose,
+        )
+
     return response
 
 

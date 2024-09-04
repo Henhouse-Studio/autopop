@@ -146,7 +146,7 @@ def initialize_session_state():
         st.session_state.show_code = False
 
     if "progress_running" not in st.session_state:
-        st.session_state.progress_running = False   
+        st.session_state.progress_running = False
 
     # =========== Arguments for Settings ===========
     if "openai_model" not in st.session_state:
@@ -181,6 +181,9 @@ def initialize_session_state():
         st.session_state.messages = st.session_state.chats.get(
             st.session_state.current_chat, []
         )
+
+    if "process_history" not in st.session_state:
+        st.session_state.process_history = ""
 
     # print("NEW")
     # print(st.session_state.messages)
@@ -296,7 +299,7 @@ def process_prompt(prompt, client):
     ):
 
         st.session_state.prompt = prompt
-        
+
         # Set progress bar running state to True
         st.session_state.progress_running = True
 
@@ -312,23 +315,18 @@ def process_prompt(prompt, client):
         # Display the "Click to open code" link
         # if st.session_state.get("progress_running", False):
 
-        #     if st.session_state.right_column_visible:
-        #         with st.expander("Click to close code"):
-        #             st.write("Here's the code associated with this operation:")
-        #             code_content = open("code.txt").read()
-        #             st.code(code_content, language="python")
-        #             if st.button("Close"):
-        #                 st.session_state.right_column_visible = False
-
-
         # Check if progress bar is running and show the button
-        if st.session_state.get("progress_running", False):
-            if st.button("Show code" if not st.session_state.show_code else "Hide code"):
-                st.session_state.show_code = not st.session_state.show_code
-        
+        # if st.session_state.get("progress_running", False):
+        #     if st.button(
+        #         "Show process" if not st.session_state.show_code else "Hide code"
+        #     ):
+        #         st.session_state.show_code = not st.session_state.show_code
+
         if df is not None:
 
             st.session_state.prompt = ""
+
+            print("History:", st.session_state.process_history)
 
             table_msg = "Here is the table you requested:"
             st.session_state.last_dataframe = df
@@ -337,8 +335,12 @@ def process_prompt(prompt, client):
                     "role": "assistant",
                     "content": table_msg,
                     "dataframe": df.to_dict(),
+                    "process_history": st.session_state.process_history,
                 }
             )
+
+            # TODO: perhaps refine
+            # st.session_state.process_history = ""
 
             # Showing thee table to user
             with st.chat_message("assistant"):
@@ -352,12 +354,14 @@ def process_prompt(prompt, client):
 def handle_text_based_query(prompt, client):
     """Handle follow-up text-based queries that involve a DataFrame."""
 
+    print("History:", st.session_state.process_history)
+
     # Get the last DataFrame to ask a question about it
     df = st.session_state.get("last_dataframe", None)
 
     # Limit the number of messages to send to OpenAI
-    window_hisotry = int(round(len(st.session_state.messages) * 0.75))
-    messages_to_send = st.session_state.messages[-(window_hisotry * 2) :]
+    window_history = int(round(len(st.session_state.messages) * 0.75))
+    messages_to_send = st.session_state.messages[-(window_history * 2) :]
     prompt = messages_to_send
 
     if df is not None:
@@ -370,8 +374,12 @@ def handle_text_based_query(prompt, client):
                     "role": "assistant",
                     "content": "Here is the updated table based on your query:",
                     "dataframe": response.to_dict(),
+                    "process_history": st.session_state.process_history,
                 }
             )
+
+            # TODO: perhaps refine
+            # st.session_state.process_history = ""
 
             # Show the updated table to the user
             with st.chat_message("assistant"):
