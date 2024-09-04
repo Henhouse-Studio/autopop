@@ -265,6 +265,12 @@ def display_chat_messages():
         with st.chat_message(message["role"]):
             st.write(message["content"])
             if "dataframe" in message:
+
+                with st.expander("Show process"):
+                    st.write("Here's the output associated with this operation:")
+                    code_content = message["process_history"]
+                    st.code(code_content)
+
                 df = pd.DataFrame(message["dataframe"])
                 st.dataframe(df)
 
@@ -330,12 +336,13 @@ def process_prompt(prompt, client):
 
             table_msg = "Here is the table you requested:"
             st.session_state.last_dataframe = df
+            curr_history = st.session_state.process_history
             st.session_state.messages.append(
                 {
                     "role": "assistant",
                     "content": table_msg,
                     "dataframe": df.to_dict(),
-                    "process_history": st.session_state.process_history,
+                    "process_history": curr_history,
                 }
             )
 
@@ -345,6 +352,7 @@ def process_prompt(prompt, client):
             # Showing thee table to user
             with st.chat_message("assistant"):
                 st.write(table_msg)
+                st.code(curr_history)
                 st.dataframe(df)
 
     else:

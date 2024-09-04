@@ -50,18 +50,10 @@ class HistoryTracker:
 
         st.session_state.process_history = ""
 
-    def update(self, text: str, verbose: bool = True):
+    def update(self):
         """
         Updates the progress bar and displays the current progress status.
-
-        :param text:
-        :param verbose:
         """
-
-        if verbose:
-            print(text + "\n")
-
-        st.session_state.process_history += text + "\n"
 
         with st.expander("Show process"):
             st.write("Here's the output associated with this operation:")
