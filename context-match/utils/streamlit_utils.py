@@ -174,16 +174,8 @@ def initialize_session_state():
     if "delete_flag" not in st.session_state:
         st.session_state.delete_flag = False
 
-    # init prompt: no messages
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    else:
-        st.session_state.messages = st.session_state.chats.get(
-            st.session_state.current_chat, []
-        )
-
     if "process_history" not in st.session_state:
-        st.session_state.process_history = ""
+        st.session_state.process_history = {}
 
     # print("NEW")
     # print(st.session_state.messages)
@@ -194,6 +186,14 @@ def initialize_session_state():
 
     if "process_stage" not in st.session_state:
         st.session_state.process_stage = "start"
+
+    # init prompt: no messages
+    if "messages" not in st.session_state and st.session_state.process_stage == "start":
+        st.session_state.messages = []
+    else:
+        st.session_state.messages = st.session_state.chats.get(
+            st.session_state.current_chat, []
+        )
 
 
 def render_sidebar():
@@ -262,6 +262,7 @@ def render_sidebar():
 def display_chat_messages():
 
     for message in st.session_state.messages:
+
         with st.chat_message(message["role"]):
             st.write(message["content"])
             if "dataframe" in message:
@@ -269,7 +270,7 @@ def display_chat_messages():
                 with st.expander("Show process"):
                     st.write("Here's the output associated with this operation:")
                     code_content = message["process_history"]
-                    st.code(code_content)
+                    st.code(code_content, language="python")
 
                 df = pd.DataFrame(message["dataframe"])
                 st.dataframe(df)
@@ -279,8 +280,12 @@ def process_prompt(prompt, client):
     """Process the user's prompt and handle different types of queries."""
 
     # Save prompt to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    # print(st.session_state.messages)
+    if (
+        len(st.session_state.messages) < 1
+        or st.session_state.messages[-1]["role"] != "user"
+    ):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
     with st.chat_message("user"):
         st.write(prompt)
 
@@ -332,11 +337,12 @@ def process_prompt(prompt, client):
 
             st.session_state.prompt = ""
 
-            print("History:", st.session_state.process_history)
+            # print("History:", st.session_state.process_history)
 
             table_msg = "Here is the table you requested:"
+            # curr_history = dict(reversed(list(st.session_state.process_history.items())))
+            curr_history = "\n".join(st.session_state.process_history.values())
             st.session_state.last_dataframe = df
-            curr_history = st.session_state.process_history
             st.session_state.messages.append(
                 {
                     "role": "assistant",
@@ -345,14 +351,20 @@ def process_prompt(prompt, client):
                     "process_history": curr_history,
                 }
             )
+            st.session_state.process_history = {}
 
             # TODO: perhaps refine
             # st.session_state.process_history = ""
 
-            # Showing thee table to user
+            # Showing the table to user
             with st.chat_message("assistant"):
                 st.write(table_msg)
-                st.code(curr_history)
+
+                with st.expander("Show process"):
+                    st.write("Here's the output associated with this operation:")
+                    code_content = curr_history
+                    st.code(code_content, language="python")
+
                 st.dataframe(df)
 
     else:
@@ -361,8 +373,6 @@ def process_prompt(prompt, client):
 
 def handle_text_based_query(prompt, client):
     """Handle follow-up text-based queries that involve a DataFrame."""
-
-    print("History:", st.session_state.process_history)
 
     # Get the last DataFrame to ask a question about it
     df = st.session_state.get("last_dataframe", None)
@@ -422,10 +432,9 @@ def stream_openai_response(client):
 def auto_save_chat(client):
     """Auto-save and generate a title for new chats."""
 
-    if (
-        st.session_state.current_chat == "New Chat"
-        and len(st.session_state.messages) == 2
-    ):
+    if st.session_state.current_chat == "New Chat" and "assistant" in [
+        m["role"] for m in st.session_state.messages
+    ]:
         new_title = generate_title(client, st.session_state.messages)
         st.session_state.current_chat = new_title
         st.session_state.chats[new_title] = st.session_state.messages
@@ -437,6 +446,7 @@ def auto_save_chat(client):
             st.session_state.messages
         )
         save_chat(st.session_state.current_chat, st.session_state.messages)
+        st.rerun()
 
 
 def load_css(file_path):

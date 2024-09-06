@@ -86,7 +86,10 @@ def compute_embeddings_rows(df: pd.DataFrame, desc: str = "a"):
 
 
 def compute_similarity_entries_row(
-    df_base: pd.DataFrame, df_populate: pd.DataFrame, verbose: bool = False
+    df_base: pd.DataFrame,
+    df_populate: pd.DataFrame,
+    verbose: bool = False,
+    print_scores: bool = False,
 ):
     """
     Compute similarity scores between the rows of two dataframes.
@@ -102,6 +105,7 @@ def compute_similarity_entries_row(
     :param df_base: The dataframe to be enriched, containing the rows for which similarity needs to be computed (pd.DataFrame).
     :param df_populate: The dataframe used for enrichment, containing the rows to compare against `df_base` (pd.DataFrame).
     :param verbose: Whether to print the computed similarity scores (bool, default = False).
+    :param print_scores: Whether to include the full confidence scores for the whole table (bool, default = False).
     :return: A dictionary containing the similarity scores, with keys as tuples `(idx_df1, idx_df2)`
              and values as similarity scores (float). The keys represent the row indices in `df_base`
              and `df_populate`, respectively (dict).
@@ -127,7 +131,9 @@ def compute_similarity_entries_row(
     }
 
     save_progress_text(
-        f"{pprint.pformat(converted_scores)}\nFinished computing row similarities!",
+        f"{pprint.pformat(converted_scores) * print_scores}"
+        + "\n" * print_scores
+        + "Finished computing row similarities!",
         verbose=verbose,
     )
 

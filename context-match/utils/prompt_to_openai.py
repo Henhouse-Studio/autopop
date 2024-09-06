@@ -223,7 +223,7 @@ def get_relevant_columns(
     :return: A dictionary of relevant columns for each dataframe (dict).
     """
 
-    save_progress_text("Getting relevant columns...", verbose=verbose)
+    save_progress_text("Getting relevant columns...\n", verbose=verbose)
     dict_weights = {}
     for table_name, (_, desc) in df_ranked.items():
 

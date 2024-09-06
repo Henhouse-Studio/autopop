@@ -5,11 +5,11 @@ import streamlit as st
 from utils.constants import *
 from utils.seed_initializer import set_seed
 from utils.prompt_expansion import handle_prompt
-from utils.progress_history import ProgressTracker
 from utils.supress_warnings import suppress_warnings
 from utils.prompt_to_openai import get_relevant_columns
 from utils.entry_matcher import enrich_dataframes, merge_top_k
 from utils.table_saver import save_dataframe, check_merged_table
+from utils.progress_history import ProgressTracker, HistoryTracker
 from utils.fetch_table_notion import get_dataframes, main_sort_dataframes
 
 
@@ -18,6 +18,7 @@ def initialize_environment(args):
     set_seed()
     suppress_warnings()
     progress = ProgressTracker(total_steps=5)
+    history = HistoryTracker()
 
     with open(KEYFILE_LOC) as f:
         dic_keys = json.load(f)
@@ -25,10 +26,12 @@ def initialize_environment(args):
         DATABASE_ID = dic_keys["database_id"]
         OPENAI_TOKEN = dic_keys["openAI_token"]
 
-    return progress, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN
+    return progress, history, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN
 
 
-def handle_start_stage(prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, progress):
+def handle_start_stage(
+    prompt, history, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, progress
+):
 
     enriched_prompt = handle_prompt(
         prompt,
@@ -40,9 +43,12 @@ def handle_start_stage(prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, pr
 
     progress.update("📥 Retrieving databases...")
     df_dict = get_dataframes(NOTION_TOKEN, DATABASE_ID, args)
+    history.update()
+
     df_ranked, df_fact_ranked = main_sort_dataframes(
         df_dict, enriched_prompt, OPENAI_TOKEN
     )
+    history.update()
 
     st.session_state.df_ranked = df_ranked
     st.session_state.df_fact_ranked = df_fact_ranked
@@ -94,7 +100,7 @@ def handle_user_selection_stage():
         st.session_state.show_form = True
 
 
-def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
+def handle_continue_processing_stage(prompt, history, OPENAI_TOKEN, args, progress):
 
     progress.update("🔍 Identifying relevant terms in the prompt...")
 
@@ -106,6 +112,8 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
     st.session_state.df_ranked = df_ranked
 
     merged_df = check_merged_table(df_ranked)
+    history.update()
+
     if merged_df is not None:
         st.write("Returning cached table...")
         progress.update("📧 Existing merge found! Retrieving...")
@@ -119,17 +127,21 @@ def handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress):
         dict_weights = get_relevant_columns(
             prompt, df_ranked, OPENAI_TOKEN, args, verbose=False
         )
+        history.update()
         st.session_state.process_stage = "add_context"
 
         return dict_weights
 
 
-def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights):
+def handle_add_context_stage(
+    prompt, history, OPENAI_TOKEN, args, progress, dict_weights
+):
 
     progress.update("🔗 Adding additional context to the tables found...")
     df_enriched = enrich_dataframes(
         st.session_state.df_ranked, st.session_state.df_fact_ranked, verbose=False
     )
+    history.update()
 
     # if len(st.session_state.df_ranked) < 2:
     #     final_df = st.session_state.df_ranked[next(iter(st.session_state.df_ranked))][0]
@@ -141,6 +153,7 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
         "<span style='color:gray; font-size:0.9em;'>**Note:** this may take a while depending on the size of the tables.</span>",
     )
     final_df = merge_top_k(prompt, df_enriched, dict_weights, OPENAI_TOKEN, args)
+    history.update()
     progress.update("✅ Finalizing the table...")
 
     # Clean up the result
@@ -151,6 +164,7 @@ def handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, dict_weights)
         save_dataframe(final_df, st.session_state.df_ranked)
 
     progress.finalize()
+    history.finalize()
     st.session_state.process_stage = "start"
 
     return final_df
@@ -170,21 +184,25 @@ def aggregate_tables(
     arguments = {k: v for k, v in locals().items() if k != "prompt"}
     args = argparse.Namespace(**arguments)
 
-    progress, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN = initialize_environment(args)
+    progress, history, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN = initialize_environment(
+        args
+    )
 
     if st.session_state.process_stage == "start":
 
         # For the form
         st.session_state.show_form = True
         handle_start_stage(
-            prompt, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, progress
+            prompt, history, OPENAI_TOKEN, NOTION_TOKEN, DATABASE_ID, args, progress
         )
 
     if st.session_state.process_stage == "user_selection":
         handle_user_selection_stage()
 
     if st.session_state.process_stage == "continue_processing":
-        result = handle_continue_processing_stage(prompt, OPENAI_TOKEN, args, progress)
+        result = handle_continue_processing_stage(
+            prompt, history, OPENAI_TOKEN, args, progress
+        )
 
         # Adjust the flow depending on the results
         if isinstance(result, pd.DataFrame):
@@ -192,7 +210,11 @@ def aggregate_tables(
 
     if st.session_state.process_stage == "add_context":
 
-        return handle_add_context_stage(prompt, OPENAI_TOKEN, args, progress, result)
+        final = handle_add_context_stage(
+            prompt, history, OPENAI_TOKEN, args, progress, result
+        )
+
+        return final
 
     return None
 

@@ -31,7 +31,6 @@ def show_librarian():
 
     if prompt:
         process_prompt(prompt, client)
-        auto_save_chat(client)
 
     elif st.session_state.prompt != "":
         process_prompt(st.session_state.prompt, client)

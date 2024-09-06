@@ -490,7 +490,7 @@ def enrich_dataframes(
              The base dataframe is updated with fact table data if column names match and the score threshold is met.
     """
 
-    save_progress_text("Enriching dataframes with Fact Tables...", verbose=verbose)
+    save_progress_text("Enriching dataframes with Fact Tables...\n", verbose=verbose)
 
     df_enriched = {}
     for key in df_ranked.keys():

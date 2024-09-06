@@ -162,7 +162,7 @@ def get_dataframes(
     :return: A dictionary with table names as keys and tuples of (is_fact, DataFrame) as values.
     """
     # Indicator message
-    save_progress_text("Retrieving databases...", verbose=verbose)
+    save_progress_text("Retrieving databases...\n", verbose=verbose)
 
     if (
         os.path.exists(page_names_file)

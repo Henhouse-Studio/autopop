@@ -48,22 +48,28 @@ class HistoryTracker:
         Initializes the progress bar and placeholders.
         """
 
-        st.session_state.process_history = ""
+        self.process_history = {}
+        self.result_holder = st.empty()
 
     def update(self):
         """
         Updates the progress bar and displays the current progress status.
         """
 
-        with st.expander("Show process"):
-            st.write("Here's the output associated with this operation:")
-            code_content = st.session_state.process_history
-            st.code(code_content, language="python")
+        self.process_history = st.session_state.process_history
+        content = next(reversed(self.process_history.values()))
+
+        with self.result_holder.container():
+            with st.expander("Show process"):
+                st.write("Here's the output associated with this operation:")
+                code_content = content
+                st.code(code_content, language="python")
 
     def finalize(self):
         """Clears the progress bar and placeholders."""
 
-        st.session_state.process_history = ""
+        self.process_history = {}
+        self.result_holder.empty()
 
 
 def save_progress_text(text: str, verbose: bool = True):
@@ -71,4 +77,8 @@ def save_progress_text(text: str, verbose: bool = True):
     if verbose:
         print(text + "\n")
 
-    st.session_state.process_history += text + "\n"
+    if st.session_state.process_stage not in st.session_state.process_history:
+        st.session_state.process_history[st.session_state.process_stage] = text
+
+    else:
+        st.session_state.process_history[st.session_state.process_stage] += text + "\n"
