@@ -128,10 +128,11 @@ def process_dataframe_query(prompt, client, df):
 def load_api_keys():
     """Load API keys from the specified file."""
 
-    with open(KEYFILE_LOC) as f:
-        dic_keys = json.load(f)
+    # with open(KEYFILE_LOC) as f:
+    #     dic_keys = json.load(f)
 
-    return OpenAI(api_key=dic_keys["openAI_token"])
+    # return OpenAI(api_key=dic_keys["openAI_token"])
+    return OpenAI(api_key=st.secrets["openai"])
 
 
 def initialize_session_state():

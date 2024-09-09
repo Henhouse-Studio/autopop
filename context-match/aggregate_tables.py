@@ -19,11 +19,15 @@ def initialize_environment(args):
     suppress_warnings()
     progress = ProgressTracker(total_steps=5)
 
-    with open(KEYFILE_LOC) as f:
-        dic_keys = json.load(f)
-        NOTION_TOKEN = dic_keys["notion_token"]
-        DATABASE_ID = dic_keys["database_id"]
-        OPENAI_TOKEN = dic_keys["openAI_token"]
+    # with open(KEYFILE_LOC) as f:
+    #     dic_keys = json.load(f)
+    #     NOTION_TOKEN = dic_keys["notion_token"]
+    #     DATABASE_ID = dic_keys["database_id"]
+    #     OPENAI_TOKEN = dic_keys["openAI_token"]
+
+    NOTION_TOKEN = st.secrets["notion_token"]
+    DATABASE_ID = st.secrets["database_id"]
+    OPENAI_TOKEN = st.secrets["openAI_token"]
 
     return progress, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN
 
