@@ -1,0 +1,21 @@
+# Environment.yml
+name: context-match
+dependencies:
+  - python==3.11.9
+  - numpy
+  - pandas
+  - pip
+  - pip:
+      - basic_notion==0.6.2
+      - notion_client==2.2.1
+      - torch<2.4.0
+      - pandas
+      - rapidfuzz
+      - numpy
+      - nltk
+      - sentence-transformers
+      - tqdm
+      - openai
+      - pprintpp
+      - linktransformer
+      - streamlit
