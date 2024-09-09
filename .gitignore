@@ -21,3 +21,4 @@ context-match/html_files_studylink/
 
 # Ignore several things in image-match
 image-match/images
+.vscode/
