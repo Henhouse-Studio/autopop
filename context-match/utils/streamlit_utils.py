@@ -307,7 +307,7 @@ def process_prompt(prompt, client):
             compute_embedding(prompt_start),
             embeddings[st.session_state["model_encoder"]],
         )
-        > 0.5
+        > 0.9
     ):
 
         st.session_state.prompt = prompt
