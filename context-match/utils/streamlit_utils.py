@@ -147,7 +147,7 @@ def initialize_session_state():
         st.session_state.show_code = False
 
     if "progress_running" not in st.session_state:
-        st.session_state.progress_running = False   
+        st.session_state.progress_running = False
 
     # =========== Arguments for Settings ===========
     if "openai_model" not in st.session_state:
@@ -175,13 +175,8 @@ def initialize_session_state():
     if "delete_flag" not in st.session_state:
         st.session_state.delete_flag = False
 
-    # init prompt: no messages
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    else:
-        st.session_state.messages = st.session_state.chats.get(
-            st.session_state.current_chat, []
-        )
+    if "process_history" not in st.session_state:
+        st.session_state.process_history = {}
 
     # print("NEW")
     # print(st.session_state.messages)
@@ -192,6 +187,14 @@ def initialize_session_state():
 
     if "process_stage" not in st.session_state:
         st.session_state.process_stage = "start"
+
+    # init prompt: no messages
+    if "messages" not in st.session_state and st.session_state.process_stage == "start":
+        st.session_state.messages = []
+    else:
+        st.session_state.messages = st.session_state.chats.get(
+            st.session_state.current_chat, []
+        )
 
 
 def render_sidebar():
@@ -260,9 +263,16 @@ def render_sidebar():
 def display_chat_messages():
 
     for message in st.session_state.messages:
+
         with st.chat_message(message["role"]):
             st.write(message["content"])
             if "dataframe" in message:
+
+                with st.expander("Show process"):
+                    st.write("Here's the output associated with this operation:")
+                    code_content = message["process_history"]
+                    st.code(code_content, language="python")
+
                 df = pd.DataFrame(message["dataframe"])
                 st.dataframe(df)
 
@@ -271,8 +281,12 @@ def process_prompt(prompt, client):
     """Process the user's prompt and handle different types of queries."""
 
     # Save prompt to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    # print(st.session_state.messages)
+    if (
+        len(st.session_state.messages) < 1
+        or st.session_state.messages[-1]["role"] != "user"
+    ):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
     with st.chat_message("user"):
         st.write(prompt)
 
@@ -297,7 +311,7 @@ def process_prompt(prompt, client):
     ):
 
         st.session_state.prompt = prompt
-        
+
         # Set progress bar running state to True
         st.session_state.progress_running = True
 
@@ -313,37 +327,45 @@ def process_prompt(prompt, client):
         # Display the "Click to open code" link
         # if st.session_state.get("progress_running", False):
 
-        #     if st.session_state.right_column_visible:
-        #         with st.expander("Click to close code"):
-        #             st.write("Here's the code associated with this operation:")
-        #             code_content = open("code.txt").read()
-        #             st.code(code_content, language="python")
-        #             if st.button("Close"):
-        #                 st.session_state.right_column_visible = False
-
-
         # Check if progress bar is running and show the button
-        if st.session_state.get("progress_running", False):
-            if st.button("Show code" if not st.session_state.show_code else "Hide code"):
-                st.session_state.show_code = not st.session_state.show_code
-        
+        # if st.session_state.get("progress_running", False):
+        #     if st.button(
+        #         "Show process" if not st.session_state.show_code else "Hide code"
+        #     ):
+        #         st.session_state.show_code = not st.session_state.show_code
+
         if df is not None:
 
             st.session_state.prompt = ""
 
+            # print("History:", st.session_state.process_history)
+
             table_msg = "Here is the table you requested:"
+            # curr_history = dict(reversed(list(st.session_state.process_history.items())))
+            curr_history = "\n".join(st.session_state.process_history.values())
             st.session_state.last_dataframe = df
             st.session_state.messages.append(
                 {
                     "role": "assistant",
                     "content": table_msg,
                     "dataframe": df.to_dict(),
+                    "process_history": curr_history,
                 }
             )
+            st.session_state.process_history = {}
 
-            # Showing thee table to user
+            # TODO: perhaps refine
+            # st.session_state.process_history = ""
+
+            # Showing the table to user
             with st.chat_message("assistant"):
                 st.write(table_msg)
+
+                with st.expander("Show process"):
+                    st.write("Here's the output associated with this operation:")
+                    code_content = curr_history
+                    st.code(code_content, language="python")
+
                 st.dataframe(df)
 
     else:
@@ -357,8 +379,8 @@ def handle_text_based_query(prompt, client):
     df = st.session_state.get("last_dataframe", None)
 
     # Limit the number of messages to send to OpenAI
-    window_hisotry = int(round(len(st.session_state.messages) * 0.75))
-    messages_to_send = st.session_state.messages[-(window_hisotry * 2) :]
+    window_history = int(round(len(st.session_state.messages) * 0.75))
+    messages_to_send = st.session_state.messages[-(window_history * 2) :]
     prompt = messages_to_send
 
     if df is not None:
@@ -371,8 +393,12 @@ def handle_text_based_query(prompt, client):
                     "role": "assistant",
                     "content": "Here is the updated table based on your query:",
                     "dataframe": response.to_dict(),
+                    "process_history": st.session_state.process_history,
                 }
             )
+
+            # TODO: perhaps refine
+            # st.session_state.process_history = ""
 
             # Show the updated table to the user
             with st.chat_message("assistant"):
@@ -407,10 +433,9 @@ def stream_openai_response(client):
 def auto_save_chat(client):
     """Auto-save and generate a title for new chats."""
 
-    if (
-        st.session_state.current_chat == "New Chat"
-        and len(st.session_state.messages) == 2
-    ):
+    if st.session_state.current_chat == "New Chat" and "assistant" in [
+        m["role"] for m in st.session_state.messages
+    ]:
         new_title = generate_title(client, st.session_state.messages)
         st.session_state.current_chat = new_title
         st.session_state.chats[new_title] = st.session_state.messages
@@ -422,6 +447,7 @@ def auto_save_chat(client):
             st.session_state.messages
         )
         save_chat(st.session_state.current_chat, st.session_state.messages)
+        st.rerun()
 
 
 def load_css(file_path):

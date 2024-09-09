@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import linktransformer as lt
 from typing import Tuple, Dict
-from utils.prompt_to_openai import get_column_names
-from utils.prompt_to_openai import rename_columns
 from utils.fuzzy_matcher import fuzzy_entry_rescorer
+from utils.progress_history import save_progress_text
+from utils.prompt_to_openai import rename_columns, get_column_names
 from utils.compute_similarity import compute_similarity_entries_row
 
 
@@ -392,6 +392,7 @@ def combine_dfs(
     pop_weights: dict,
     tolerance: float = 0.05,
     api_key: str = None,
+    verbose: bool = False,
 ) -> pd.DataFrame:
     """
     Combining the rows of two dataframes based on similarity scores using merge.
@@ -405,7 +406,7 @@ def combine_dfs(
     :param tolerance: How much to allow for potentially inaccurate matches (defaults to 0.15).
                       The higher the tolerance the more indirect matches are allowed.
     :param api_key: The API key for renaming columns in the final dataframe (str).
-
+    :param verbose: Whether to print the computed similarity scores (bool, default = False).
     :return: The merged dataframe (pd.DataFrame) and the combined_weights (dict) between the two dataframes.
     """
     # Filter by confidence threshold
@@ -455,7 +456,8 @@ def combine_dfs(
         filtered_scores_f=filtered_scores_f,
         save_csv=False,
     )
-    print("Merged dataframes!")
+
+    save_progress_text("Merged dataframes!", verbose=verbose)
 
     # Combine the dictionary weights for merging later if needed
     combined_weights = merge_and_average_dicts(base_weights, pop_weights)
@@ -483,11 +485,12 @@ def enrich_dataframes(
     :param threshold: A float representing the minimum average "score" for the merged dataframe to be accepted.
                       If the average score is above the threshold, the dataframe is retained. Default is 0.7.
     :param model_encoder: A string representing the model used for merging dataframes. Default is "all-MiniLM-L6-v2".
+    :param verbose: Whether to print the computed similarity scores (bool, default = False).
     :return: A dictionary of enriched dataframes with the same keys as the original df_ranked dictionary.
              The base dataframe is updated with fact table data if column names match and the score threshold is met.
     """
 
-    print("\nEnriching dataframes with Fact Tables...")
+    save_progress_text("Enriching dataframes with Fact Tables...\n", verbose=verbose)
 
     df_enriched = {}
     for key in df_ranked.keys():
@@ -499,9 +502,11 @@ def enrich_dataframes(
 
             # Check for matching column names between the base and populate dataframes
             matching_columns = df_base.columns.intersection(df_populate.columns)
-            if matching_columns.empty and verbose:
-                print(
-                    f"No matching columns between '{key}' and '{key_fact}'. Skipping..."
+            if matching_columns.empty:
+
+                save_progress_text(
+                    f"No matching columns between '{key}' and '{key_fact}'. Skipping...",
+                    verbose=verbose,
                 )
                 continue
 
@@ -523,6 +528,7 @@ def merge_top_k(
     dict_weights: dict,
     api_key: str,
     args: argparse.Namespace,
+    verbose: bool = False,
 ):
     """
     Merge top-ranked dataframes sequentially based on matching criteria and weighted values.
@@ -532,10 +538,11 @@ def merge_top_k(
     :param api_key: A string representing the API key for renaming columns in the final dataframe.
     :param args: A Namespace object containing additional arguments like tolerance for merging and matching_threshold for
                  determining whether dataframes can be combined based on their confidence values.
+    :param verbose: Whether to print the computed similarity scores (bool, default = False).
     :return: The final merged dataframe with renamed columns.
     """
 
-    print("\nMerging table pairs...")
+    save_progress_text("Merging table pairs...", verbose=verbose)
 
     # Get the keys of the dataframes and the first dataframe
     table_names = list(df_ranked.keys())
@@ -545,7 +552,9 @@ def merge_top_k(
     # Iterate through the remaining dataframes and merge them
     for table_name in table_names[1:]:
 
-        print(f"Merging current base dataframe with '{table_name}'")
+        save_progress_text(
+            f"Merging current base dataframe with '{table_name}'", verbose=verbose
+        )
         df_populate = df_ranked[table_name]
         pop_weights = dict_weights[table_name]
         df_combined, new_weights = combine_dfs(

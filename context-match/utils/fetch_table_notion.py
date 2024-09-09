@@ -3,9 +3,11 @@ import pickle
 import argparse
 import notion_df
 import pandas as pd
+import streamlit as st
 from notion_client import Client
 from utils.constants import *
 from utils.prompt_to_openai import rerank_dataframes
+from utils.progress_history import save_progress_text
 
 
 def get_table_notion(NOTION_TOKEN: str, DATABASE_URL: str):
@@ -90,6 +92,7 @@ def save_data_pickle(
     page_table_links,
     page_names_file: str = "page_names.pkl",
     page_table_links_file: str = "page_table_links.pkl",
+    verbose: bool = False,
 ):
     with open(page_names_file, "wb") as f:
         pickle.dump(page_names, f)
@@ -97,12 +100,15 @@ def save_data_pickle(
     with open(page_table_links_file, "wb") as f:
         pickle.dump(page_table_links, f)
 
-    print(f"Data saved to {page_names_file} and {page_table_links_file}")
+    save_progress_text(
+        f"Data saved to {page_names_file} and {page_table_links_file}", verbose=verbose
+    )
 
 
 def load_data_pickle(
     page_names_file: str = "page_names.pkl",
     page_table_links_file: str = "page_table_links.pkl",
+    verbose: bool = False,
 ):
     with open(page_names_file, "rb") as f:
         page_names = pickle.load(f)
@@ -110,7 +116,10 @@ def load_data_pickle(
     with open(page_table_links_file, "rb") as f:
         page_table_links = pickle.load(f)
 
-    print(f"Data loaded from {page_names_file} and {page_table_links_file}")
+    save_progress_text(
+        f"Data loaded from {page_names_file} and {page_table_links_file}",
+        verbose=verbose,
+    )
 
     return page_names, page_table_links
 
@@ -152,7 +161,8 @@ def get_dataframes(
 
     :return: A dictionary with table names as keys and tuples of (is_fact, DataFrame) as values.
     """
-    print("Retrieving databases...")
+    # Indicator message
+    save_progress_text("Retrieving databases...\n", verbose=verbose)
 
     if (
         os.path.exists(page_names_file)
@@ -183,8 +193,9 @@ def get_dataframes(
         is_fact = page_names[idx][0]
         table_name = page_names[idx][1]
         path_table = os.path.join(DATA_DIR, f"{table_name}.csv")
-        if verbose:
-            print(f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'")
+        save_progress_text(
+            f"[{idx+1}] Found{' Fact' * is_fact} table: '{table_name}'", verbose=verbose
+        )
 
         for table in tables:
 
@@ -198,8 +209,9 @@ def get_dataframes(
                     df = pd.read_csv(path_table)
 
                 else:
-                    print(
-                        "Saving Fact table. This may take a while as it is a large database..."
+                    save_progress_text(
+                        "Saving Fact table. This may take a while as it is a large database...",
+                        verbose=verbose,
                     )
                     df = get_table_notion(notion_token, temp)
                     df.to_csv(path_table, index=False)
@@ -215,8 +227,9 @@ def get_dataframes(
 
             df_dict[table_name] = (is_fact, df)
 
-    if verbose:
-        print(f"[*] Number of databases found: {len(df_dict)}\n")
+    save_progress_text(
+        f"[*] Number of databases found: {len(df_dict)}\n", verbose=verbose
+    )
 
     return df_dict
 
@@ -230,9 +243,11 @@ def main_sort_dataframes(
     :param dfs_dict: A dictionary with table names as keys and pandas DataFrames as values (dict).
     :param enriched_prompt: The enriched prompt text (str).
     :param openai_token: The token to access ChatGPT (str).
+    :param verbose: If True, prints detailed logs during execution (default: False).
     :return: A tuple containing the sorted and fact dataframes (dict, dict).
     """
-    print("Selecting most relevant databases...")
+
+    save_progress_text("Selecting most relevant databases...", verbose=verbose)
 
     df_dict_new = {}
     df_fact_dict = {}
@@ -267,15 +282,18 @@ def main_sort_dataframes(
     }
 
     # Print if verbose
-    if verbose:
-        print(f"Selecting Top-{len(relevant_tables)} tables:")
+    top_text = f"Selecting Top-{len(relevant_tables)} tables:\n"
 
-        for i, (table_name, _) in enumerate(df_ranked.items()):
-            print(f"[{i+1}]:", table_name)
+    for i, (table_name, _) in enumerate(df_ranked.items()):
+        top_text += f"[{i+1}]: {table_name}\n"
 
-        print(f"\nSelecting Top-{len(relevant_fact_tables)} Fact tables:")
+    save_progress_text(top_text, verbose=verbose)
 
-        for i, (table_name, _) in enumerate(df_fact_ranked.items()):
-            print(f"[{i+1}]:", table_name)
+    fact_text = f"\nSelecting Top-{len(relevant_fact_tables)} Fact tables:\n"
+
+    for i, (table_name, _) in enumerate(df_fact_ranked.items()):
+        fact_text += f"[{i+1}]: {table_name}\n"
+
+    save_progress_text(fact_text, verbose=verbose)
 
     return df_ranked, df_fact_ranked

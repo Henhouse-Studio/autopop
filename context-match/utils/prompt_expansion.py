@@ -71,7 +71,7 @@ def handle_prompt(
     api_key: str,
     expand_with_syn: bool = False,
     expand_with_openAI: bool = True,
-    print_prompt: bool = False,
+    verbose: bool = False,
 ):
     """
     Function to handle the prompt enrichment process
@@ -80,7 +80,7 @@ def handle_prompt(
     :param api_key: The OpenAI API key (str).
     :param expand_with_syn: Expand the prompt with synonyms (bool).
     :param expand_with_openAI: Expand the prompt with OpenAI (bool).
-    :param print_prompt: Print the prompt (bool).
+    :param verbose: Print the prompt (bool).
     :return: The enriched prompt (str).
     """
     if expand_with_openAI:
@@ -89,7 +89,7 @@ def handle_prompt(
     if expand_with_syn:
         prompt = expand_prompt_with_synonyms(prompt)
 
-    if print_prompt:
+    if verbose:
         print(f"The input prompt is: \n{prompt}")
 
     return prompt
