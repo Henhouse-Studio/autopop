@@ -3,6 +3,7 @@
 **/keys.json
 .DS_Store
 *.csv
+**/*.pkl
 *.npy
 *.json
 
