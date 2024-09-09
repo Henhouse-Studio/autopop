@@ -7,6 +7,7 @@ from notion_client import Client
 from utils.notion_df import get_table_notion 
 from utils.prompt_to_openai import rerank_dataframes
 from utils.progress_history import save_progress_text
+
 def get_page_links(notion_client, database_id: str):
     """
     Get links to pages in a Notion database.
