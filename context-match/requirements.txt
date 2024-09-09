@@ -4,7 +4,6 @@ torch<2.4.0
 requests
 pandas
 jupyter
-notion_df
 rapidfuzz
 scikit-learn
 transformers
@@ -17,4 +16,3 @@ pprintpp
 linktransformer
 streamlit
 openai
-# langchain-community

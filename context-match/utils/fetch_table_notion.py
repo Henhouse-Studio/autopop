@@ -1,29 +1,12 @@
 import os
 import pickle
 import argparse
-import notion_df
 import pandas as pd
-import streamlit as st
-from notion_client import Client
 from utils.constants import *
+from notion_client import Client
+from utils.notion_df import get_table_notion 
 from utils.prompt_to_openai import rerank_dataframes
 from utils.progress_history import save_progress_text
-
-
-def get_table_notion(NOTION_TOKEN: str, DATABASE_URL: str):
-    """
-    Retrieve a table from Notion as a DataFrame.
-
-    :param NOTION_TOKEN: The Notion API token.
-    :param DATABASE_URL: The URL of the Notion database.
-    :return: A pandas DataFrame containing the data from the Notion database.
-    """
-
-    df = notion_df.download(DATABASE_URL, api_key=NOTION_TOKEN)
-    df = df.iloc[:, ::-1]  # Reverse the columns for specific ordering
-    return df
-
-
 def get_page_links(notion_client, database_id: str):
     """
     Get links to pages in a Notion database.
