@@ -13,6 +13,7 @@
 context-match/~
 context-match/bin
 context-match/llama3/
+context-match/.streamlit/
 context-match/test.ipynb
 context-match/edgedriver_mac64_m1/
 context-match/html_files_studylink/
