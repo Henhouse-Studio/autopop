@@ -132,7 +132,7 @@ def load_api_keys():
     #     dic_keys = json.load(f)
 
     # return OpenAI(api_key=dic_keys["openAI_token"])
-    return OpenAI(api_key=st.secrets["openai"])
+    return OpenAI(api_key=st.secrets["openAI_token"])
 
 
 def initialize_session_state():
