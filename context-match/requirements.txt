@@ -1,18 +1,15 @@
-basic_notion==0.6.2
+# beautifulsoup4==4.12.3 # fetch_neighbours_location.py
+# Requests==2.32.3 # fetch_neighbours_location.py
+linktransformer==0.1.15
+nltk==3.8.1
 notion_client==2.2.1
-torch<2.4.0
-requests
-pandas
-jupyter
-rapidfuzz
-scikit-learn
-transformers
-numpy
-nltk
-sentence-transformers
-tqdm
-openai
+numpy==2.1.1
+openai==1.44.1
+pandas==2.2.2
+rapidfuzz==3.9.4
+scipy==1.14.1
+sentence_transformers==3.0.1
+streamlit==1.32.0
+torch==2.4.0
+tqdm==4.66.4
 pprintpp
-linktransformer
-streamlit
-openai
