@@ -8,8 +8,8 @@ openai==1.44.1
 pandas==2.2.2
 rapidfuzz==3.9.4
 scipy==1.14.1
-sentence_transformers==3.0.1
+sentence_transformers
 streamlit==1.32.0
-torch==2.4.0
+torch<2.4.0
 tqdm==4.66.4
 pprintpp
