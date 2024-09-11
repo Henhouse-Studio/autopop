@@ -193,6 +193,9 @@ def initialize_session_state():
             st.session_state.current_chat, []
         )
 
+    # =========== Database Configuration ===========
+    if "database_ID" not in st.session_state:
+        st.session_state["database_ID"] = st.secrets["database_id"]
 
 def render_sidebar():
     """Render the chat management sidebar with a rename function."""

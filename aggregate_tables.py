@@ -27,7 +27,7 @@ def initialize_environment(args):
     #     OPENAI_TOKEN = dic_keys["openAI_token"]
 
     NOTION_TOKEN = st.secrets["notion_token"]
-    DATABASE_ID = st.secrets["database_id"]
+    DATABASE_ID = st.session_state["database_ID"]
     OPENAI_TOKEN = st.secrets["openAI_token"]
 
     return progress, history, NOTION_TOKEN, DATABASE_ID, OPENAI_TOKEN

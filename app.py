@@ -143,6 +143,14 @@ def show_settings():
     if "confirm_save" not in st.session_state:
         st.session_state.confirm_save = False
 
+    # Database ID input
+    st.subheader("Database Configuration")
+    database_id = st.text_input(
+        "Enter Notion Database ID:",
+        value=st.session_state["database_ID"],
+        key="database_id_input",
+    )
+
     # Model selection
     st.subheader("Model Selection")
     selected_model = st.selectbox(
@@ -200,7 +208,8 @@ def show_settings():
 
     # Check if settings have been changed
     if (
-        selected_model != st.session_state["openai_model"]
+        database_id != st.session_state["database_ID"]
+        or selected_model != st.session_state["openai_model"]
         or selected_matching_threshold != st.session_state["matching_threshold"]
         or selected_tolerance != st.session_state["tolerance"]
         or selected_model_encoder != st.session_state["model_encoder"]
@@ -213,6 +222,7 @@ def show_settings():
         st.write("")
         save_button = st.button("💾 Save Settings", key="save_settings_button")
         if save_button:
+            st.session_state["database_ID"] = database_id
             st.session_state["openai_model"] = selected_model
             st.session_state["matching_threshold"] = selected_matching_threshold
             st.session_state["tolerance"] = selected_tolerance

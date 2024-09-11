@@ -175,11 +175,10 @@ def rerank_dataframes(
         if is_fact:
 
             prompt = f"""Based on this prompt '{original_prompt}' and these table descriptions: {desc},
-                    Select the tables which are probably most helpful for enriching the
+                    Select the names of the tables which are probably most helpful for enriching the
                     context to match other tables with each other (i.e., linking a company to
-                    a person by a mutual connection), and ensure that the 
-                    names are indeed the titles present in the provided descriptions.
-                    Return all these names in a Python list and nothing else."""
+                    a person by a mutual connection).
+                    Return all these table names in a Python list and nothing else."""
 
         else:
 
