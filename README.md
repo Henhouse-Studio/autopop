@@ -10,19 +10,13 @@ This repository is a chat-based database merging/retrieval system which also can
 To run this code, first do the following:
 
 ```
-
 git clone Henhouse-Studio/autopop
-
 ```
 
 Afterwards, you need to install the dependencies:
 
 ```
-
-# For the context-matcher
-cd context-match
 conda env create -f environment.yml
-
 ```
 
 ## **Running**
@@ -34,9 +28,5 @@ Place all the files you want in `databases`.
 Then, just do the following:
 
 ```
-
-# For the context-matcher
 streamlit run app.py
-
-
 ```
