@@ -8,7 +8,7 @@
 *.json
 
 # Exception for JSON to keep the command embeddings
-assets/**/*.json
+!assets/**/*.json
 
 # Ignore several things in context-match
 ~
