@@ -179,7 +179,7 @@ def aggregate_tables(
     matching_threshold: float = 0.5,
     tolerance: float = 0.1,
     model_encoder: str = "all-MiniLM-L6-v2",
-    fetch_tables: bool = False,
+    fetch_tables: bool = True,
     temperature: float = 0.0,
 ):
     # # Set progress bar running state to True
