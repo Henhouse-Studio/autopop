@@ -2,7 +2,7 @@
 
 This repository is a chat-based database merging/retrieval system which also can perform general LLM capabilities.
 
-![Image of the interface.](context-match/assets/images/screenshot.PNG)
+![Image of the interface.](assets/images/screenshot.PNG)
 
 
 ## **Setup**
@@ -29,7 +29,7 @@ conda env create -f environment.yml
 
 For running the code, you ideally need some `.csv` files to use as a type of knowledge base. Due to the way this code currently functions, it acts more like a datasource which gets analyzed in-chat rather than a database query system. 
 
-Place all the files you want in `context-match/databases`.
+Place all the files you want in `databases`.
 
 Then, just do the following:
 
