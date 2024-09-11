@@ -178,9 +178,6 @@ def initialize_session_state():
     if "process_history" not in st.session_state:
         st.session_state.process_history = {}
 
-    # print("NEW")
-    # print(st.session_state.messages)
-
     # =========== Aggregation State Variables ===========
     if "prompt" not in st.session_state:
         st.session_state.prompt = ""

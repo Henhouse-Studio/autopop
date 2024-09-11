@@ -23,10 +23,6 @@ Afterwards, you need to install the dependencies:
 cd context-match
 conda env create -f environment.yml
 
-# For the image-matcher
-cd image-match
-conda env create -f environment.yml
-
 ```
 
 ## **Running**
@@ -40,10 +36,7 @@ Then, just do the following:
 ```
 
 # For the context-matcher
-streamlit run context-match/app.py
+streamlit run app.py
 
-# For the image-matcher
-cd image-match
-python main.py
 
 ```

@@ -12,7 +12,7 @@ dependencies:
       - pandas
       - rapidfuzz
       - numpy
-      - nltk
+      - nltk>3.9
       - sentence-transformers
       - tqdm
       - openai

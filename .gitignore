@@ -8,18 +8,18 @@
 *.json
 
 # Exception for JSON to keep the command embeddings
-!context-match/assets/**/*.json
+assets/**/*.json
 
 # Ignore several things in context-match
-context-match/~
-context-match/bin
-context-match/llama3/
-context-match/.streamlit/
-context-match/test.ipynb
-context-match/edgedriver_mac64_m1/
-context-match/html_files_studylink/
+~
+bin
+llama3/
+.streamlit/
+test.ipynb
+edgedriver_mac64_m1/
+html_files_studylink/
+.streamlit/secrets.toml
 
 # Ignore several things in image-match
 image-match/images
 .vscode/
-context-match/.streamlit/secrets.toml
