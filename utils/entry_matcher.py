@@ -235,6 +235,9 @@ def extract_and_create_matched_df(
     matched_rows_populate = df_populate.loc[
         matched_populate_indices, col_name_pop
     ].values
+    
+    if col_name_base == col_name_pop:
+        col_name_pop = f"{col_name_pop}_pop"
 
     # Create the DataFrame with matched entities
     matched_entities_df = pd.DataFrame(

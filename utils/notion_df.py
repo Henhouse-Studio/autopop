@@ -32,7 +32,7 @@ def extract_content(prop):
             return start_date
         return None
     if prop['type'] == 'number':
-        return prop['number']
+        return str(prop['number'])
     if prop['type'] == 'formula':
         return prop['formula']['string'] if prop['formula'] and 'string' in prop['formula'] else str(prop['formula'].get('number', ''))
     if prop['type'] == 'relation':
