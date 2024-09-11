@@ -11,7 +11,7 @@ To run this code, first do the following:
 
 ```
 
-git clone gregorygo12/autopop
+git clone Henhouse-Studio/autopop
 
 ```
 
