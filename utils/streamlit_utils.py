@@ -384,7 +384,14 @@ def handle_text_based_query(prompt, client):
     """Handle follow-up text-based queries that involve a DataFrame."""
 
     # Get the last DataFrame to ask a question about it
-    df = st.session_state.get("last_dataframe", None)
+    
+    # if we start a new chat then we don't have a last dataframe
+    if st.session_state.current_chat == "New Chat":
+        df = None
+    else:
+        # check if we have a last dataframe
+        df = st.session_state.get("last_dataframe")
+
 
     # Limit the number of messages to send to OpenAI
     window_history = int(round(len(st.session_state.messages) * 0.75))
