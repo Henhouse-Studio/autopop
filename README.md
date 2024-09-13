@@ -39,6 +39,8 @@ You can test out the demo [here](https://hh-autopop.streamlit.app/)!
 
 ## **Setup**
 
+Besides the website, you can run the code locally! However, it requires Anaconda to be installed beforehand.
+
 To run this code, first do the following:
 
 ```
@@ -53,7 +55,7 @@ conda env create -f environment.yml
 
 ## **Running**
 
-For running the code, you ideally need some `.csv` files to use as a type of knowledge base. Due to the way this code currently functions, it acts more like a datasource which gets analyzed in-chat rather than a database query system. 
+For running the code, you ideally need either a Notion database link or some `.csv` files to use as a type of knowledge base (only applies to the local version). Due to the way this code currently functions, it acts more like a datasource which gets analyzed in-chat rather than a database query system. 
 
 Place all the files you want in `databases`.
 
