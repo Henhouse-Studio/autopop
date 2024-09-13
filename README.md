@@ -23,6 +23,10 @@ The system distinguished between two table types:
 
 Through this, we select a table as the main one to populate. Meanwhile, the other tables in the ranking are used either to be matched with (the regular tables), or for fact enrichment (the fact tables).
 
+
+We double check with you (the user) if the selected dataframes look good for transparency!
+
+
 3. Afterwards, we enrich the tables with facts to allow for more fuzzy matches. Then, we combine the tables based on how similar the rows are.
 
 This is calculated by first making the model emphasize the importance of certain columns more (i.e., probably the column `Company Name` is more relevant for matching compared to most others). Continuing from this, a text encoder encodes the entries from both tables for all entries, with cosine similarity being used to check if any two rows are a good enough match.
@@ -32,6 +36,8 @@ We also check both for if the similarity/confidence between the entries is high 
 If it's too low, we skip and try the next one. Otherwise, the tables get merged and have a confidence score added.
 
 4. The table is now fully generated! If there was only one table required, then it just immediately returns the table and skips most of step 3. Otherwise, it goes into the step.
+
+An overview of the whole process is attached alongside the table too!
 
 
 You can test out the demo [here](https://hh-autopop.streamlit.app/)!
