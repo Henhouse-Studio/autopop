@@ -6,6 +6,7 @@
 **/*.pkl
 *.npy
 *.json
+**/secrets.toml
 
 # Exception for JSON to keep the command embeddings
 !assets/**/*.json
@@ -14,12 +15,12 @@
 ~
 bin
 llama3/
-.streamlit/
 test.ipynb
 edgedriver_mac64_m1/
 html_files_studylink/
-.streamlit/secrets.toml
+
+# Exception for theme
+!.streamlit/config.toml
 
 # Ignore several things in image-match
-image-match/images
 .vscode/
