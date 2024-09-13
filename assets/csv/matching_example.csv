@@ -1,0 +1,5 @@
+Table 1,Table 2,Table 3,Avg. Confidence Value
+Company Profiles,LinkedIn Profiles,,0.754
+LinkedIn Profiles,Blog Profiles,Company Profiles,0.636
+Company Profiles,Blog Profiles,,0.515
+Company Profiles,Nutrition Table,,0.116

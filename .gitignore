@@ -11,6 +11,10 @@
 # Exception for JSON to keep the command embeddings
 !assets/**/*.json
 
+# Exception for .csv settings examples
+!assets/csv/matching_example.csv
+!assets/csv/threshold_example.csv
+
 # Ignore several things in context-match
 ~
 bin
