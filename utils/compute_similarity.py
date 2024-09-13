@@ -59,6 +59,33 @@ def compute_embeddings_rows(df: pd.DataFrame, desc: str = "a"):
     :return: The embedding list for the dataframe rows (list).
     """
 
+    embeddings_dict = {}
+
+    # Iterate over each row in the DataFrame without using multithreading
+    for idx, row in tqdm(df.iterrows(), total=len(df), desc=f"Computing row embeddings from {desc} database"):
+        # Convert the row to a comma-separated string
+        row_string = ", ".join(row.astype(str).tolist())
+        # Compute the embedding for the row
+        embedding = compute_embedding(row_string)
+        # Store the result in the dictionary
+        embeddings_dict[idx] = embedding
+
+    # Sort the dictionary by keys (row indices)
+    sorted_rows = sorted(embeddings_dict.keys())
+    # Extract embeddings in the sorted order
+    df_embeddings = [embeddings_dict[row] for row in sorted_rows]
+
+    return df_embeddings
+
+def compute_embeddings_rows_(df: pd.DataFrame, desc: str = "a"):
+    """
+    Compute the embeddings based on a specific column.
+
+    :param df: The dataframe to compute the embeddings for (pd.DataFrame).
+    :param desc: The name of the database (str).
+    :return: The embedding list for the dataframe rows (list).
+    """
+
     future_to_row = {}
     embeddings_dict = {}
 
