@@ -17,3 +17,8 @@ SAVE_MERGE_DIR = os.path.join(dir_path, "databases/merge_cache")
 # For settings
 TOL_EXAMPLE = os.path.join(dir_path, "assets/csv/threshold_example.csv")
 TABLE_EXAMPLE = os.path.join(dir_path, "assets/csv/matching_example.csv")
+
+
+# Theme
+LIGHT_LOGO = os.path.join(dir_path, "assets/images/henhouse.png")
+DARK_LOGO = os.path.join(dir_path, "assets/images/henhouse_dark.png")

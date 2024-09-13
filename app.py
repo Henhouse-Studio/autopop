@@ -1,5 +1,7 @@
 import pandas as pd
 import streamlit as st
+from streamlit_javascript import st_javascript
+from utils.image_utils import img_to_html
 from utils.constants import *
 from utils.streamlit_utils import (
     load_css,
@@ -293,6 +295,13 @@ def main():
     if st.session_state.page is None:
 
         load_css(STYLE_MAIN)
+
+        st_theme = st_javascript("""window.getComputedStyle(window.parent.document.getElementsByClassName("stApp")[0]).getPropertyValue("color-scheme")""")
+
+        if st_theme == "dark":
+            st.markdown(img_to_html(f'{LIGHT_LOGO}'), unsafe_allow_html=True)
+        else:
+            st.markdown(img_to_html(f'{DARK_LOGO}'), unsafe_allow_html=True)
 
         st.markdown(
             """<div class='centered-container'>

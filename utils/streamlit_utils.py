@@ -209,7 +209,7 @@ def render_sidebar():
     """Render the chat management sidebar with a rename function."""
     with st.sidebar:
 
-        st.header("AutoPop Chat v1.0")
+        st.header("AutoPop Chat v1.1")
 
         # Create a row with two columns to house the buttons side by side
         col1, col2 = st.columns([0.15, 0.85])
