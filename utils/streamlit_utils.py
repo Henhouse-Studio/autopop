@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 import streamlit as st
+from re import sub
 from openai import OpenAI
 from utils.constants import *
 from aggregate_tables import aggregate_tables
@@ -88,14 +89,21 @@ def generate_title(client, messages):
 
     If 'get me a table' is in the start, focus on what type of table is being requested.
 
-    Do not include characters that are illegal for filenames.
+    Do not include characters that are illegal for filenames. For example, do not use
+    quotation marks or hashtags.
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": summary_prompt}],
         max_tokens=10,
     )
-    return response.choices[0].message.content.strip()
+
+    # For removing illegal characters (extra insurance)
+    pattern = r'[<>:"/\\|?*@]'
+    clean_title = sub(pattern, "", response.choices[0].message.content.strip())
+    print(clean_title)
+
+    return clean_title
 
 
 def process_dataframe_query(prompt, client, df):
@@ -196,6 +204,7 @@ def initialize_session_state():
     # =========== Database Configuration ===========
     if "database_ID" not in st.session_state:
         st.session_state["database_ID"] = st.secrets["database_id"]
+
 
 def render_sidebar():
     """Render the chat management sidebar with a rename function."""

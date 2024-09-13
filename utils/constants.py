@@ -13,3 +13,7 @@ DATA_DIR = os.path.join(dir_path, "databases/table_of_tables")
 FIELD_DIR = os.path.join(dir_path, "databases/table_of_fields")
 MERGED_DIR = os.path.join(dir_path, "databases/merged_cache.csv")
 SAVE_MERGE_DIR = os.path.join(dir_path, "databases/merge_cache")
+
+# For settings
+TOL_EXAMPLE = os.path.join(dir_path, "assets/csv/threshold_example.csv")
+TABLE_EXAMPLE = os.path.join(dir_path, "assets/csv/matching_example.csv")

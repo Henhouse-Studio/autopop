@@ -31,6 +31,7 @@ def show_librarian():
 
     if prompt:
         process_prompt(prompt, client)
+        auto_save_chat(client)
 
     elif st.session_state.prompt != "":
         process_prompt(st.session_state.prompt, client)
@@ -140,19 +141,25 @@ def show_settings():
     # Initialize a session state variable to track changes and confirmation
     if "settings_changed" not in st.session_state:
         st.session_state.settings_changed = False
+
     if "confirm_save" not in st.session_state:
         st.session_state.confirm_save = False
 
     # Database ID input
     st.subheader("Database Configuration")
+
     database_id = st.text_input(
         "Enter Notion Database ID:",
         value=st.session_state["database_ID"],
         key="database_id_input",
     )
 
+    # The description
+    st.markdown("The link to the Notion database containing all the databases.")
+
     # Model selection
     st.subheader("Model Selection")
+
     selected_model = st.selectbox(
         "Choose a model:",
         ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4"],
@@ -160,6 +167,11 @@ def show_settings():
             st.session_state["openai_model"]
         ),
         key="model_selectbox",
+    )
+
+    # The description
+    st.markdown(
+        "The OpenAI model to use for table selection and other miscellaneous utilities."
     )
 
     # Model Encoder
@@ -173,8 +185,11 @@ def show_settings():
         key="model_encoder_selectbox",
     )
 
+    # The description
+    st.markdown("The text encoder model to use for matching row entries.")
+
     # Matching Threshold
-    st.subheader("Matching Threshold")
+    st.subheader("Table Matching Threshold")
     selected_matching_threshold = st.slider(
         "Set the matching threshold:",
         min_value=0.0,
@@ -184,8 +199,22 @@ def show_settings():
         key="matching_threshold_slider",
     )
 
+    # The description
+    st.markdown(
+        "Determines how strict the criteria for matching full tables is in terms of confidence levels."
+    )
+
+    # To show an example of the above
+    with st.expander("Example of how it works"):
+
+        example_df = pd.read_csv(TABLE_EXAMPLE)
+        st.dataframe(example_df)
+        st.write(
+            "If we set the threshold to '0.5', then the last combination would not be considered for further combination."
+        )
+
     # Tolerance
-    st.subheader("Tolerance")
+    st.subheader("Row Matching Threshold")
     selected_tolerance = st.slider(
         "Set the tolerance:",
         min_value=0.0,
@@ -195,16 +224,30 @@ def show_settings():
         key="tolerance_slider",
     )
 
-    # Temperature
-    st.subheader("Temperature")
-    selected_temperature = st.slider(
-        "Set the temperature:",
-        min_value=0.0,
-        max_value=1.0,
-        value=float(st.session_state["temperature"]),
-        step=0.01,
-        key="temperature_slider",
+    # The description
+    st.markdown(
+        "Determines how strict the criteria for matching individual rows is in terms of confidence levels."
     )
+
+    # To show an example of the above
+    with st.expander("Example of how it works"):
+
+        example_df = pd.read_csv(TOL_EXAMPLE)
+        st.dataframe(example_df)
+        st.write(
+            "If we set the threshold to '0.5', then 'Brian King' and 'Mia Scott' get excluded from the results table."
+        )
+
+    # Temperature
+    # st.subheader("Temperature")
+    # selected_temperature = st.slider(
+    #     "Set the temperature:",
+    #     min_value=0.0,
+    #     max_value=1.0,
+    #     value=float(st.session_state["temperature"]),
+    #     step=0.01,
+    #     key="temperature_slider",
+    # )
 
     # Check if settings have been changed
     if (
@@ -213,7 +256,7 @@ def show_settings():
         or selected_matching_threshold != st.session_state["matching_threshold"]
         or selected_tolerance != st.session_state["tolerance"]
         or selected_model_encoder != st.session_state["model_encoder"]
-        or selected_temperature != st.session_state["temperature"]
+        # or selected_temperature != st.session_state["temperature"]
     ):
         st.session_state.settings_changed = True
 
@@ -227,7 +270,7 @@ def show_settings():
             st.session_state["matching_threshold"] = selected_matching_threshold
             st.session_state["tolerance"] = selected_tolerance
             st.session_state["model_encoder"] = selected_model_encoder
-            st.session_state["temperature"] = selected_temperature
+            # st.session_state["temperature"] = selected_temperature
             st.session_state.settings_changed = False
             st.success("Settings updated successfully!")
 
