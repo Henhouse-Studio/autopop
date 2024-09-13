@@ -101,7 +101,6 @@ def generate_title(client, messages):
     # For removing illegal characters (extra insurance)
     pattern = r'[<>:"/\\|?*@]'
     clean_title = sub(pattern, "", response.choices[0].message.content.strip())
-    print(clean_title)
 
     return clean_title
 
@@ -420,7 +419,10 @@ def handle_text_based_query(prompt, client):
 
     else:
         stream_openai_response(client)
-
+        from utils.streamlit_utils import load_api_keys
+        # Load the OpenAI API
+        client = load_api_keys()
+        auto_save_chat(client)
 
 def stream_openai_response(client):
     """Stream OpenAI response for non-DataFrame queries."""
