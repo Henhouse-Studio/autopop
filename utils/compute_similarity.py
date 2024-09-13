@@ -50,7 +50,7 @@ def compute_similarity_matrix(embeddings1: list, embeddings2: list):
     return similarity_scores
 
 
-def compute_embeddings_rows_(df: pd.DataFrame, desc: str = "a"):
+def compute_embeddings_rows(df: pd.DataFrame, desc: str = "a"):
     """
     Compute the embeddings based on a specific column.
 
@@ -77,7 +77,7 @@ def compute_embeddings_rows_(df: pd.DataFrame, desc: str = "a"):
 
     return df_embeddings
 
-def compute_embeddings_rows(df: pd.DataFrame, desc: str = "a"):
+def compute_embeddings_rows_(df: pd.DataFrame, desc: str = "a"):
     """
     Compute the embeddings based on a specific column.
 
