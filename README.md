@@ -15,9 +15,9 @@ How it generally works:
 
 The system distinguished between two table types:
 
-    - **Regular Tables:** These are tables that tend to get updated regularly. Think for example a table containing work employees. Employees don't always stick around and also get hired at other places, meaning that the entries in this table get changed (semi-)regularly.
+- **Regular Tables:** These are tables that tend to get updated regularly. Think for example a table containing work employees. Employees don't always stick around and also get hired at other places, meaning that the entries in this table get changed (semi-)regularly.
 
-    - **Fact Tables:** These are things that are more "static" in nature, such as a table containing location names.
+- **Fact Tables:** These are things that are more "static" in nature, such as a table containing location names.
 
 2. We then rank the tables using `gpt-4o-mini` (or whichever of the three models you prefer) based on how relevant they are to the prompt.
 
