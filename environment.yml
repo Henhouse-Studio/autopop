@@ -19,3 +19,4 @@ dependencies:
       - pprintpp
       - linktransformer
       - streamlit
+      - streamlit_javascript
